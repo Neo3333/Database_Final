@@ -1,6 +1,8 @@
 from flask import Flask, render_template,request,session,url_for,redirect
 import pymysql
 import hashlib
+from datetime import date
+from datetime import timedelta
 
 #Initialize the app from Flask
 app = Flask(__name__)
@@ -58,7 +60,7 @@ def searchUpcomingFlights():
 @app.route('/backToIndex')
 def backToIndex():
 	try:
-		return render_template('index.html', username=session['username']);
+		return render_template('index.html', username=session['username'], usertype=session['type']);
 	except:
 		return render_template('index.html');
 
@@ -66,7 +68,8 @@ def backToIndex():
 def searchFlightStatus():
 	flight_num = request.form['flight_num']
 	departure_date = str(request.form['departure_date'])
-	arrival_date = str(request.form['arrival_date'])
+	arrival_date = str(request.form
+	['arrival_date'])
 	control_list=[]
 	if flight_num!='':
 		control_list.append("flight_num='%d'"%(int(flight_num)))
@@ -298,6 +301,50 @@ def purchaseC2(airline_name,flight_num):
         message = 'Purchase Failure. No more seats for this flight'
         return render_template('purchase.html',message=message)
 
+@app.route('/checkSpending', methods=['GET', 'POST'])
+def checkSpending():
+	username=session['username']
+	cursor=conn.cursor()
+	try:
+		start_date=str(request.form['start_date'])+"-01"
+		end_date=str(request.form['end_date'])+"-01"
+	except:
+		start_date = date.today().isoformat()[:-3]+"-01"
+		end_date = (date.today()-timedelta(days=365)).isoformat()[:-3]+"-01"
+	cursor = conn.cursor()
+	query = 'SELECT sum(price)\
+			FROM purchases NATURAL JOIN ticket NATURAL JOIN flight\
+			WHERE custor_email = %s and purchase_date>=start_date\
+			and purchase_date<DATE_ADD(end_date, INTERVAL 1 MONTH)'
+	cursor.execute(query, username)
+	total_spending = cursor.fetchone()
+	cur_y=int(start_date[4:])
+	cur_m=int(start_date[5:7])
+	end_y=int(end_date[4:])
+	end_m=int(end_date[5:7])
+	end_m+=1;
+	if end_m>12:
+		end_m=1;
+		end_y+=1;
+	data=[]
+	while (cur_y!=end_y or cur_m!=end_m):
+		start_date = date(cur_y, cur_m, 1).isoformat()
+		end_date = date(cur_y, cur_m, 1).isoformat()
+		query = 'SELECT sum(price)\
+				FROM purchases NATURAL JOIN ticket NATURAL JOIN flight\
+				WHERE custor_email = %s and purchase_date>=start_date\
+				and purchase_date<DATE_ADD(end_date, INTERVAL 1 MONTH)'
+		cursor.execute(query, username)
+		cur_spending = cursor.fetchone()
+		if cur_spending==None:
+			cur_spending=0;
+		data.append([start_date[:-3], cur_spending])
+		cur_m+=1
+		if cur_m>12:
+			cur_m=1
+			cur_y+=1
+	print(start_month, end_month)
+	return render_template('chart.html', total_spending=total_spending, data=data)
 
 @app.route('/logout')
 def logout():
