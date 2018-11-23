@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+{% if error %}
+	<p class="error"><strong>Error:</strong> {{error}}</p>
+{% endif %}
+
+Please select type: <select id="mySelect" onchange="myFunction()">
+  <option value="Empty">
+  <option value="Customer">Customer
+  <option value="Agent">Booking Agent
+  <option value="Staff">Airline Staff
+</select>
+
+<p id="demo"></p>
+
+<script>
+function myFunction() {
+    var x = document.getElementById("mySelect").value;
+	if (x=="Empty"){
+		document.getElementById("demo").innerHTML = "";
+	}
+	if (x=="Customer"){
+		document.getElementById("demo").innerHTML = '<form action="/loginCustomer" method="POST">\
+			email:<input type="text" name = "username" placeholder="username" required/> </br>\
+			password:<input type="password" name = "password" placeholder="password" required/></br>\
+			<input type="submit" value = Login />\
+			</form>';
+	}
+	if (x=="Staff"){
+		document.getElementById("demo").innerHTML = '<form action="/loginStaff" method="POST">\
+			username:<input type="text" name = "username" placeholder="username" required/> </br>\
+			password:<input type="password" name = "password" placeholder="password" required/></br>\
+			<input type="submit" value = Login />\
+			</form>';
+	}
+	if (x=="Agent"){
+		document.getElementById("demo").innerHTML = '<form action="/loginAgent" method="POST">\
+			email:<input type="text" name = "username" placeholder="username" required/> </br>\
+			password:<input type="password" name = "password" placeholder="password" required/></br>\
+			<input type="submit" value = Login />\
+			</form>';
+	}
+}
+</script>
+
+<a href="/">Back</a>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<body>
+{% if result %}
+	<style type="text/css">
+		table, th, td{
+			border: 1px solid black;
+		}
+	</style>
+	<table>
+        {% for k in result[0].keys() %}
+         <th>{{k}}</th>
+        {% endfor %}
+        {% for line in result %}
+        <tr>
+            {% for k in result[0].keys() %}
+            <td>{{line[k]}}
+            </td>
+            {% endfor %}
+            {% if type %}
+            <td>
+            <a href={{url_for('purchaseC2',airline_name=line['airline_name'],
+                flight_num=line['flight_num'])}}> buy </a>
+            </td>
+            {% endif %}
+        </tr>
+       
+        {% endfor %}
+	</table> 
+{% endif %}
+
+
+<a href="/">Back</a>
+
+
+</body>
+
+</html>

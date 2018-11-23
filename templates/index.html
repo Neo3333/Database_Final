@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    
+</head>
+
+<body>
+
+{% if username %}
+	<a class="message">Welcome, {{usertype}} {{username}}!</a>
+	<a href="/logout">Logout</a>
+{% else %}
+	<a href="/login">Login</a>
+	<a href="/register">Register</a>
+{% endif %}
+
+<form action="/searchUpcomingFlights" method="POST">
+	<h1>Search flights by city and airport</h1>
+    <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
+    <input type="text" name = "dept_city" placeholder="e.g. Shanghai"> </br>
+    <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
+    <input type="text" name = "arr_city" placeholder="e.g. New York City"> </br>
+    <input type="date" name = "date"> </br>
+	<input type="submit" value = Search /> 
+</form>
+
+<form action="/searchFlightStatus" method="POST">
+	<h1>Search flight status by flight number, arrival/departure date</h1>
+	<input type="text" name = "flight_num" placeholder="e.g. 123"> </br>
+	<input type="date" name = "departure_date"> </br>
+	<input type="date" name = "arrival_date"> </br>
+	<input type="submit" value = Search />
+</form>
+
+{% if usertype == 'customer' %}
+<form action="/viewMyFlight" method="POST">
+    <h1>Search your flight by sorce/end city, departure/arrival date</h1>
+    <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
+    <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
+    <input type="date" name = "start_date"> </br>
+    <input type="date" name = "end_date"> </br>
+    <input type="submit" value = Check />
+</form>
+
+<form action="/purchaseC1" method="POST">
+    <h1>Search for ticket to purchase</h1>
+    <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
+    <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
+    <input type="date" name = "departure_date"> </br>
+    <input type="submit" value = Get_Info />
+</form>
+
+{% endif %}
+    
+</body>
+
+</html>
