@@ -309,41 +309,56 @@ def checkSpending():
 		start_date=str(request.form['start_date'])+"-01"
 		end_date=str(request.form['end_date'])+"-01"
 	except:
-		start_date = date.today().isoformat()[:-3]+"-01"
-		end_date = (date.today()-timedelta(days=365)).isoformat()[:-3]+"-01"
+		end_date = date.today().isoformat()[:-3]+"-01"
+		start_date = (date.today()-timedelta(days=365)).isoformat()[:-3]+"-01"
+	if end_date<start_date:
+		return render_template('chart.html', total_spending=total_spending, data=data)
 	cursor = conn.cursor()
-	query = 'SELECT sum(price)\
+	query = 'SELECT sum(price) as tot\
 			FROM purchases NATURAL JOIN ticket NATURAL JOIN flight\
-			WHERE custor_email = %s and purchase_date>=start_date\
-			and purchase_date<DATE_ADD(end_date, INTERVAL 1 MONTH)'
-	cursor.execute(query, username)
+			WHERE customer_email = %s and purchase_date>=%s\
+			and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH)'
+	print(query%(username, start_date, end_date))
+	cursor.execute(query, (username, start_date, end_date))
 	total_spending = cursor.fetchone()
-	cur_y=int(start_date[4:])
+	total_spending = total_spending['tot']
+	if total_spending==None:
+		total_spending=0
+	else:
+		total_spending=int(total_spending)
+	cur_y=int(start_date[:4])
 	cur_m=int(start_date[5:7])
-	end_y=int(end_date[4:])
+	end_y=int(end_date[:4])
 	end_m=int(end_date[5:7])
+	print(cur_y, cur_m)
+	print(end_y, end_m)
 	end_m+=1;
 	if end_m>12:
 		end_m=1;
 		end_y+=1;
 	data=[]
-	while (cur_y!=end_y or cur_m!=end_m):
+	while not (cur_y==end_y and cur_m==end_m):
+		print(cur_y, cur_m)
+		print(end_y, end_m)
 		start_date = date(cur_y, cur_m, 1).isoformat()
 		end_date = date(cur_y, cur_m, 1).isoformat()
-		query = 'SELECT sum(price)\
+		print(start_date, end_date)
+		query = 'SELECT sum(price) as tot\
 				FROM purchases NATURAL JOIN ticket NATURAL JOIN flight\
-				WHERE custor_email = %s and purchase_date>=start_date\
-				and purchase_date<DATE_ADD(end_date, INTERVAL 1 MONTH)'
-		cursor.execute(query, username)
+				WHERE customer_email = %s and purchase_date>=%s\
+				and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH)'
+		print(query%(username, start_date, end_date))
+		cursor.execute(query, (username, start_date, end_date))
 		cur_spending = cursor.fetchone()
+		cur_spending = cur_spending['tot']
 		if cur_spending==None:
 			cur_spending=0;
-		data.append([start_date[:-3], cur_spending])
+		data.append([int(start_date[:4]), int(start_date[5:7]), int(cur_spending)])
 		cur_m+=1
 		if cur_m>12:
 			cur_m=1
 			cur_y+=1
-	print(start_month, end_month)
+	print(total_spending, data)
 	return render_template('chart.html', total_spending=total_spending, data=data)
 
 @app.route('/logout')

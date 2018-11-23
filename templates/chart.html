@@ -3,8 +3,8 @@
 
 <head>
 	<title>Bar Chart</title>
-	<script src="chartbundle.js"></script>
-	<script src="utils.js"></script>
+	<script src="https://www.chartjs.org/dist/2.7.3/Chart.bundle.js"></script>
+	<script src="https://www.chartjs.org/samples/latest/utils.js"></script>
 	<style>
 	canvas {
 		-moz-user-select: none;
@@ -17,10 +17,13 @@
 <body>
 	
 	<form action="/checkSpending" method="POST">
-		<h1>Check Spending date</h1></br>
+		<h1>Check Spending by date</h1></br>
 		<input type="month" name = "start_date" /required > to <input type="month" name = "end_date" /required > </br>
 		<input type="submit" value = Check />
 	</form>
+	{% if total_spending %}
+		<p>Your total spending in this time period is: {{total_spending}}</p></br>
+	{% endif %}
 	
 	<div id="container" style="width: 75%;">
 		<canvas id="canvas"></canvas>
@@ -38,7 +41,6 @@
 				borderWidth: 1,
 				data: []
 			}]
-
 		};
 
 		window.onload = function() {
@@ -53,28 +55,20 @@
 					},
 					title: {
 						display: true,
-						text: 'Chart.js Bar Chart'
+						text: 'Spending'
 					}
 				}
 			});
-
 		};
 		
+		var l={{data}};
+		console.log(l);
+		for (var i=0; i<l.length; i++){
+			barChartData.labels.push(l[i][0]+'-'+l[i][1]);
+			barChartData.datasets[0].data.push(l[i][2]);
+		}
 		
-		document.getElementById('addData').addEventListener('click', function() {
-			if (barChartData.datasets.length > 0) {
-				var month = MONTHS[barChartData.labels.length % MONTHS.length];
-				barChartData.labels.push(month);
-
-				for (var index = 0; index < barChartData.datasets.length; ++index) {
-					// window.myBar.addData(randomScalingFactor(), index);
-					barChartData.datasets[index].data.push(randomScalingFactor());
-				}
-
-				window.myBar.update();
-			}
-		});
-
+		window.myBar.update();
 	</script>
 
 <a href='/'>Back</a>
