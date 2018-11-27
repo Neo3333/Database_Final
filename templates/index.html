@@ -35,7 +35,7 @@
 
 {% if usertype == 'customer' %}
 <form action="/viewMyFlight" method="POST">
-    <h1>Search your flight by sorce/end city, departure/arrival date</h1>
+    <h1>Search your flight by source/end city, departure/arrival date</h1>
     <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
     <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
     <input type="date" name = "start_date"> </br>
@@ -48,7 +48,7 @@
 
 {% if usertype == 'booking_agent' %}
 <form action="/viewMyFlightAgent" method="POST">
-    <h1>Search your flight by sorce/end city, departure/arrival date</h1>
+    <h1>Search your flight by source/end city, departure/arrival date</h1>
     <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
     <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
     <input type="date" name = "start_date"> </br>

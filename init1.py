@@ -153,19 +153,25 @@ def registerStaff():
 def registerAgent():
 	username = request.form['username']
 	password = request.form['password']
-	booking_agent_id = request.form['booking_agent_id']
 	
 	cursor = conn.cursor()
 	query = 'SELECT * FROM booking_agent WHERE email = %s'
 	cursor.execute(query, (username))
 	data = cursor.fetchone()
 	
+	query_1 = 'SELECT MAX(booking_agent_id) FROM booking_agent'
+	cursor.execute(query_1)
+	data_1 = cursor.fetchone()
+	if data_1==None:
+		max_id=1
+	else:
+		max_id = data_1['MAX(booking_agent_id)']
 	if (data):
 		error = "This agent already exists"
 		return render_template('register.html', error = error)
 	else:
 		ins = 'INSERT INTO booking_agent VALUES(%s,%s,%s)'
-		cursor.execute(ins,(username,password,booking_agent_id))
+		cursor.execute(ins,(username,password,max_id))
 		conn.commit()
 		cursor.close()
 		return render_template('index.html')
@@ -335,6 +341,7 @@ def checkSpending():
 		end_m=1;
 		end_y+=1;
 	data=[]
+	label=[]
 	while not (cur_y==end_y and cur_m==end_m):
 		start_date = date(cur_y, cur_m, 1).isoformat()
 		end_date = date(cur_y, cur_m, 1).isoformat()
@@ -349,62 +356,65 @@ def checkSpending():
 		cur_spending = cur_spending['tot']
 		if cur_spending==None:
 			cur_spending=0;
-		data.append([int(start_date[:4]), int(start_date[5:7]), int(cur_spending)])
+		label.append(start_date[:7])
+		data.append(int(cur_spending))
 		cur_m+=1
 		if cur_m>12:
 			cur_m=1
 			cur_y+=1
 	print(total_spending, data)
-	return render_template('chart.html', total_spending=total_spending, data=data)
+	return render_template('chart.html', total_spending=total_spending, data=data, label=label, act='Spending')
 
 @app.route('/purchaseA1/<airline_name>/<flight_num>',methods=['GET','POST'])
 def purchaseA1(airline_name,flight_num):
-    global airline_name_1
-    global flight_num_1
-    airline_name_1 = airline_name
-    flight_num_1 = flight_num
-    return render_template('purchase_agent.html')
+	session['airline_name'] = airline_name
+	session['flight_num'] = flight_num
+	return render_template('purchase_agent.html')
 
 @app.route('/purchaseA2',methods=['GET','POST'])
 def purchaseA2():
-    username_b = session['username']
-    username_c = request.form['username']
-    query_0 = 'SELECT email FROM customer WHERE email = %s'
-    cursor = conn.cursor()
-    cursor.execute(query_0,(username_c))
-    data_0 = cursor.fetchone()
-    if data_0 == None:
-        error = 'Please provide valid information'
-        return render_template('purchase_agent.html', error = error)
-    query_1 = 'SELECT seats_left FROM flight WHERE airline_name = %s AND flight_num = %s'
-    cursor.execute(query_1,(airline_name_1,flight_num_1))
-    data_1 = cursor.fetchone()
-    seats_left = int(data_1['seats_left'])
-    if (seats_left < 1):
-        message = 'Purchase Failure. No more seats for this flight'
-        return render_template('purchase.html',message = message)
-    query_2 = 'SELECT MAX(ticket_id) FROM ticket'
-    cursor.execute(query_2)
-    data_2 = cursor.fetchone()
-    max = data_2['MAX(ticket_id)']
-    if (max == None):
-        new_id = 1
-    else:
-        new_id = int(max) + 1
-    query_3 = 'INSERT INTO ticket VALUES(%s,%s,%s)'
-    cursor.execute(query_3,(str(new_id),airline_name_1,flight_num_1))
-    query_4 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
-    cursor.execute(query_4,(username_b))
-    data_4 = cursor.fetchone()
-    b_id = str(data_4['booking_agent_id'])
-    query_5 = 'INSERT INTO purchases VALUES(%s,%s,%s,CURDATE())'
-    cursor.execute(query_5,(str(new_id),username_c,b_id))
-    query_6 = 'UPDATE flight SET seats_left = seats_left - 1 WHERE airline_name =%s AND flight_num=%s'
-    cursor.execute(query_6,(airline_name_1,flight_num_1))
-    conn.commit()
-    cursor.close()
-    message = 'Purchase Complete'
-    return render_template('purchase.html',message=message)
+	username_b = session['username']
+	username_c = request.form['username']
+	airline_name_1 = session['airline_name']
+	flight_num_1 = session['flight_num']
+	query_0 = 'SELECT email FROM customer WHERE email = %s'
+	cursor = conn.cursor()
+	cursor.execute(query_0,(username_c))
+	data_0 = cursor.fetchone()
+	if data_0 == None:
+		error = 'Please provide valid information'
+		return render_template('purchase_agent.html', error = error)
+	query_1 = 'SELECT seats_left FROM flight WHERE airline_name = %s AND flight_num = %s'
+	cursor.execute(query_1,(airline_name_1,flight_num_1))
+	data_1 = cursor.fetchone()
+	seats_left = int(data_1['seats_left'])
+	if (seats_left < 1):
+		message = 'Purchase Failure. No more seats for this flight'
+		return render_template('purchase.html',message = message)
+	query_2 = 'SELECT MAX(ticket_id) FROM ticket'
+	cursor.execute(query_2)
+	data_2 = cursor.fetchone()
+	max = data_2['MAX(ticket_id)']
+	if (max == None):
+		new_id = 1
+	else:
+		new_id = int(max) + 1
+	query_3 = 'INSERT INTO ticket VALUES(%s,%s,%s)'
+	cursor.execute(query_3,(str(new_id),airline_name_1,flight_num_1))
+	query_4 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
+	cursor.execute(query_4,(username_b))
+	data_4 = cursor.fetchone()
+	b_id = str(data_4['booking_agent_id'])
+	query_5 = 'INSERT INTO purchases VALUES(%s,%s,%s,CURDATE())'
+	cursor.execute(query_5,(str(new_id),username_c,b_id))
+	query_6 = 'UPDATE flight SET seats_left = seats_left - 1 WHERE airline_name =%s AND flight_num=%s'
+	cursor.execute(query_6,(airline_name_1,flight_num_1))
+	conn.commit()
+	cursor.close()
+	message = 'Purchase Complete'
+	session.pop('airline_name')
+	session.pop('flight_num')
+	return render_template('purchase.html',message=message)
 
 @app.route('/viewMyFlightAgent', methods=['GET', 'POST'])
 def viewMyFlightAgent():
