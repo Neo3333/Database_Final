@@ -450,7 +450,47 @@ def viewMyFlightAgent():
     cursor.close()
     return render_template('search_results.html',result = data_1)
 
-
+@app.route('/checkTop5', methods=['GET', 'POST'])
+def checkTop5():
+    username=session['username']
+    cursor = conn.cursor()
+    query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
+    cursor.execute(query_0,(username))
+    data_0 = cursor.fetchone()
+    b_id = data_0['booking_agent_id']
+    end_date = date.today().isoformat()[:-3]+"-01"
+    cur_y = date.today().year
+    cur_m = date.today().month
+    cur_m = cur_m - 5
+    if (cur_m < 1):
+        cur_y = cur_y - 1
+        cur_m = cur_m + 12
+    start_date = date(cur_y,cur_m,1).isoformat()
+    query_1 = 'SELECT customer_email,COUNT(DISTINCT ticket_id) AS count FROM ticket NATURAL JOIN purchases \
+            WHERE booking_agent_id = %s AND purchase_date >%s AND purchase_date < DATE_ADD(%s, INTERVAL 1 MONTH) \
+            GROUP BY customer_email ORDER BY count DESC'
+    cursor.execute(query_1,(str(b_id),start_date,end_date))
+    data_1 = cursor.fetchall()[:5]
+    data1=[]
+    label1=[]
+    for i in range(len(data_1)):
+        data1.append(data_1[i]['count'])
+        label1.append(data_1[i]['customer_email'])
+    query_2 = 'SELECT customer_email, SUM(price)*0.1 AS commission FROM purchases NATURAL JOIN ticket NATURAL JOIN flight \
+            WHERE booking_agent_id = %s AND purchase_date > %s AND purchase_date < DATE_ADD(%s, INTERVAL 1 MONTH) \
+            GROUP BY customer_email ORDER BY commission DESC'
+    cursor.execute(query_2,(str(b_id),start_date,end_date))
+    data_2 = cursor.fetchall()[:5]
+    data2=[]
+    label2=[]
+    for i in range(len(data_2)):
+        data2.append(int(data_2[i]['commission']))
+        label2.append(data_2[i]['customer_email'])
+    print(data1)
+    print(label1)
+    print(data2)
+    print(label2)
+    return render_template('chartagent.html',data1 = data1, data2 = data2, label1 = label1, label2 = label2)
 
 @app.route('/logout')
 def logout():
