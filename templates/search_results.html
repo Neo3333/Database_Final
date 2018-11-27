@@ -21,10 +21,16 @@
             <td>{{line[k]}}
             </td>
             {% endfor %}
-            {% if type %}
+            {% if type == 'customer' %}
             <td>
             <a href={{url_for('purchaseC2',airline_name=line['airline_name'],
-                flight_num=line['flight_num'])}}> {{type}} </a>
+                flight_num=line['flight_num'])}}> buy </a>
+            </td>
+            {% endif %}
+            {% if type == 'booking_agent' %}
+            <td>
+            <a href={{url_for('purchaseA1',airline_name=line['airline_name'],
+                flight_num=line['flight_num'])}}> buy </a>
             </td>
             {% endif %}
         </tr>

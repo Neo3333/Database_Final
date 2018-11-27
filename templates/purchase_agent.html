@@ -1,0 +1,20 @@
+<html>
+<head>
+<title> Purchase </title>
+</head>
+<body>
+
+{% if error %}
+    <p class="error"><strong>Error:</strong> {{error}}</p>
+{% endif %}
+    
+<form action="/purchaseA2" method="POST">
+    <h1> Please provide customer information</h1>
+    <input type = "text" name = "username" placeholder="e.g. jh4873@nyu.edu"></br>
+    <input type = "submit" value = Submit />
+</form>
+
+<a href="/">Back</a>
+
+</body>
+</html>

@@ -15,12 +15,12 @@
 </head>
 
 <body>
-	
 	<form action="/checkSpending" method="POST">
 		<h1>Check Spending by date</h1></br>
 		<input type="month" name = "start_date" /required > to <input type="month" name = "end_date" /required > </br>
 		<input type="submit" value = Check />
 	</form>
+    {% if data %}
 	{% if total_spending %}
 		<p>Your total spending in this time period is: {{total_spending}}</p></br>
 	{% endif %}
@@ -70,7 +70,10 @@
 		
 		window.myBar.update();
 	</script>
-
+    {% endif %}
+    {% if error %}
+    <p class="error"><strong>Error:</strong> {{error}}</p>
+    {% endif %}
 <a href='/'>Back</a>
 </body>
 

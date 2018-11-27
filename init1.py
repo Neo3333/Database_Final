@@ -48,12 +48,12 @@ def searchUpcomingFlights():
 	data = cursor.fetchall()
 	error = None
 	conn.commit()
-	cursor.close()
+
 	try:
 		username=session['username'];
 		usertype=session['type'];
 		print(username, usertype)
-		return render_template('search_results.html',result = data, type = 'buy')
+		return render_template('search_results.html',result = data, type = usertype)
 	except:
 		return render_template('search_results.html', result=data);
 	
@@ -68,8 +68,7 @@ def backToIndex():
 def searchFlightStatus():
 	flight_num = request.form['flight_num']
 	departure_date = str(request.form['departure_date'])
-	arrival_date = str(request.form
-	['arrival_date'])
+	arrival_date = str(request.form['arrival_date'])
 	control_list=[]
 	if flight_num!='':
 		control_list.append("flight_num='%d'"%(int(flight_num)))
@@ -254,10 +253,10 @@ def viewMyFlight():
 	
 	if len(control_list) == 0:
 		query = "SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
-                WHERE status = 'upcoming' AND customer_email = %s"%(username)
+                WHERE status = 'upcoming' AND customer_email = '%s'"%(username)
 	else:
 		query = "SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
-                WHERE customer_email = %s AND "%(username) + " AND ".join(control_list)
+                WHERE customer_email = '%s' AND "%(username) + " AND ".join(control_list)
 
 	print(query)
 	cursor = conn.cursor()
@@ -312,7 +311,8 @@ def checkSpending():
 		end_date = date.today().isoformat()[:-3]+"-01"
 		start_date = (date.today()-timedelta(days=365)).isoformat()[:-3]+"-01"
 	if end_date<start_date:
-		return render_template('chart.html', total_spending=total_spending, data=data)
+		error = 'Invalid Input'
+		return render_template('chart.html', error = error)
 	cursor = conn.cursor()
 	query = 'SELECT sum(price) as tot\
 			FROM purchases NATURAL JOIN ticket NATURAL JOIN flight\
@@ -330,16 +330,12 @@ def checkSpending():
 	cur_m=int(start_date[5:7])
 	end_y=int(end_date[:4])
 	end_m=int(end_date[5:7])
-	print(cur_y, cur_m)
-	print(end_y, end_m)
 	end_m+=1;
 	if end_m>12:
 		end_m=1;
 		end_y+=1;
 	data=[]
 	while not (cur_y==end_y and cur_m==end_m):
-		print(cur_y, cur_m)
-		print(end_y, end_m)
 		start_date = date(cur_y, cur_m, 1).isoformat()
 		end_date = date(cur_y, cur_m, 1).isoformat()
 		print(start_date, end_date)
@@ -360,6 +356,91 @@ def checkSpending():
 			cur_y+=1
 	print(total_spending, data)
 	return render_template('chart.html', total_spending=total_spending, data=data)
+
+@app.route('/purchaseA1/<airline_name>/<flight_num>',methods=['GET','POST'])
+def purchaseA1(airline_name,flight_num):
+    global airline_name_1
+    global flight_num_1
+    airline_name_1 = airline_name
+    flight_num_1 = flight_num
+    return render_template('purchase_agent.html')
+
+@app.route('/purchaseA2',methods=['GET','POST'])
+def purchaseA2():
+    username_b = session['username']
+    username_c = request.form['username']
+    query_0 = 'SELECT email FROM customer WHERE email = %s'
+    cursor = conn.cursor()
+    cursor.execute(query_0,(username_c))
+    data_0 = cursor.fetchone()
+    if data_0 == None:
+        error = 'Please provide valid information'
+        return render_template('purchase_agent.html', error = error)
+    query_1 = 'SELECT seats_left FROM flight WHERE airline_name = %s AND flight_num = %s'
+    cursor.execute(query_1,(airline_name_1,flight_num_1))
+    data_1 = cursor.fetchone()
+    seats_left = int(data_1['seats_left'])
+    if (seats_left < 1):
+        message = 'Purchase Failure. No more seats for this flight'
+        return render_template('purchase.html',message = message)
+    query_2 = 'SELECT MAX(ticket_id) FROM ticket'
+    cursor.execute(query_2)
+    data_2 = cursor.fetchone()
+    max = data_2['MAX(ticket_id)']
+    if (max == None):
+        new_id = 1
+    else:
+        new_id = int(max) + 1
+    query_3 = 'INSERT INTO ticket VALUES(%s,%s,%s)'
+    cursor.execute(query_3,(str(new_id),airline_name_1,flight_num_1))
+    query_4 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
+    cursor.execute(query_4,(username_b))
+    data_4 = cursor.fetchone()
+    b_id = str(data_4['booking_agent_id'])
+    query_5 = 'INSERT INTO purchases VALUES(%s,%s,%s,CURDATE())'
+    cursor.execute(query_5,(str(new_id),username_c,b_id))
+    query_6 = 'UPDATE flight SET seats_left = seats_left - 1 WHERE airline_name =%s AND flight_num=%s'
+    cursor.execute(query_6,(airline_name_1,flight_num_1))
+    conn.commit()
+    cursor.close()
+    message = 'Purchase Complete'
+    return render_template('purchase.html',message=message)
+
+@app.route('/viewMyFlightAgent', methods=['GET', 'POST'])
+def viewMyFlightAgent():
+    dept_airport = request.form['dept_airport']
+    arr_airport = request.form['arr_airport']
+    start_date = str(request.form['start_date'])
+    end_date = str(request.form['end_date'])
+    username = session['username']
+    control_list=[]
+    if dept_airport!='':
+        control_list.append("departure_airport = '%s'"%(dept_airport))
+    if arr_airport!='':
+        control_list.append("arrival_airport = '%s'"%(arr_airport))
+    if start_date!='':
+        control_list.append("DATE(departure_time)>'%s'"%(start_date))
+    if end_date!='':
+        control_list.append("DATE(arrival_time)<'%s'"%(end_date))
+    cursor = conn.cursor()
+    query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
+    cursor.execute(query_0,(username))
+    data_0 = cursor.fetchone()
+    booking_agent_id = data_0['booking_agent_id']
+
+    if len(control_list) == 0:
+        query_1 = "SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
+        WHERE status = 'upcoming' AND booking_agent_id = '%s'"%(booking_agent_id)
+    else:
+        query_1 ="SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
+        WHERE booking_agent_id = '%s' AND "%(booking_agent_id) + " AND ".join(control_list)
+    cursor.execute(query_1)
+    data_1 = cursor.fetchall()
+    conn.commit()
+    cursor.close()
+    return render_template('search_results.html',result = data_1)
+
+
 
 @app.route('/logout')
 def logout():

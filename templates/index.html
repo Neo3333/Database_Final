@@ -40,10 +40,22 @@
     <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
     <input type="date" name = "start_date"> </br>
     <input type="date" name = "end_date"> </br>
-    <input type="submit" value = Check />
+    <input type="submit" value = Search />
 </form>
 
 <a href="/checkSpending">Check my spending</a>
+{% endif %}
+
+{% if usertype == 'booking_agent' %}
+<form action="/viewMyFlightAgent" method="POST">
+    <h1>Search your flight by sorce/end city, departure/arrival date</h1>
+    <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
+    <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
+    <input type="date" name = "start_date"> </br>
+    <input type="date" name = "end_date"> </br>
+    <input type="submit" value = Search />
+</form>
+
 {% endif %}
     
 </body>
