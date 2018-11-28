@@ -16,16 +16,17 @@
 </head>
 
 <body>
-	<p>View top customers<\p>
+	<h1>View top customers</h1>
 	<div id="container" style="width: 75%;">
 		<canvas id="canvas"></canvas>
-	</div><\br>
+	</div></br>
 	
 	<div id="container1" style="width: 75%;">
 		<canvas id="canvas1"></canvas>
 	</div>
 	
 	<script>
+	
 		var color = Chart.helpers.color;
 		var barChartData = {
 			labels: [],
@@ -37,8 +38,36 @@
 				data: []
 			}]
 		};
+		
+		var barChartData1 = {
+			labels: [],
+			datasets: [{
+				label: 'commission',
+				backgroundColor: color(window.chartColors.red).alpha(0.5).rgbString(),
+				borderColor: window.chartColors.red,
+				borderWidth: 1,
+				data: []
+			}]
+		};
+		
+		var d={{data1|safe}};
+		var l={{label1|safe}};
+		console.log(d);
+		for (var i=0; i<l.length; i++){
+			barChartData.labels.push(l[i]);
+			barChartData.datasets[0].data.push(d[i]);
+		}
+		d={{data2|safe}};
+		l={{label2|safe}};
+		console.log(d);
+		for (var i=0; i<l.length; i++){
+			barChartData1.labels.push(l[i]);
+			barChartData1.datasets[0].data.push(d[i]);
+		}
+		
 		window.onload = function() {
 			var ctx = document.getElementById('canvas').getContext('2d');
+			var ctx2 = document.getElementById('canvas1').getContext('2d');
 			window.myBar = new Chart(ctx, {
 				type: 'bar',
 				data: barChartData,
@@ -53,28 +82,8 @@
 					}
 				}
 			});
-		};
-		var d={{data1|safe}};
-		var l={{label1|safe}};
-		console.log(l);
-		for (var i=0; i<l.length; i++){
-			barChartData.labels.push(l[i]);
-			barChartData.datasets[0].data.push(d[i]);
-		}
-		
-		var barChartData1 = {
-			labels: [],
-			datasets: [{
-				label: 'commission',
-				backgroundColor: color(window.chartColors.red).alpha(0.5).rgbString(),
-				borderColor: window.chartColors.red,
-				borderWidth: 1,
-				data: []
-			}]
-		};
-		window.onload = function() {
-			var ctx = document.getElementById('canvas1').getContext('2d');
-			window.myBar = new Chart(ctx, {
+			
+			window.myBar2 = new Chart(ctx2, {
 				type: 'bar',
 				data: barChartData1,
 				options: {
@@ -89,15 +98,9 @@
 				}
 			});
 		};
-		d={{data2|safe}};
-		l={{label2|safe}};
-		console.log(l);
-		for (var i=0; i<l.length; i++){
-			barChartData1.labels.push(l[i]);
-			barChartData1.datasets[0].data.push(d[i]);
-		}
 		
 		window.myBar.update();
+		window.myBar2.update();
 	</script>
 	
     {% if error %}
