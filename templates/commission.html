@@ -1,0 +1,17 @@
+<html>
+<head>
+<title>View my commission</title>    
+</head>
+<body>
+	<form action="/viewCommission" method="POST">
+		<input type="date" name = "start_date" /required > to <input type="date" name = "end_date" /required > </br>
+		<input type="submit" value = Check />
+	</form>
+	{% if message %}
+		{% for line in message %}
+			<h2>{{line}}</h2>
+		{% endfor %}
+	{% endif %}
+    <a href='/'>Back</a>
+    </body>
+</html>

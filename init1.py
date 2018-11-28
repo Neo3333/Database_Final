@@ -492,6 +492,62 @@ def checkTop5():
     print(label2)
     return render_template('chartagent.html',data1 = data1, data2 = data2, label1 = label1, label2 = label2)
 
+@app.route('/viewCommission', methods=['GET','POST'])
+def viewCommission():
+	username=session['username']
+	cursor = conn.cursor()
+	query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	b_id = data_0['booking_agent_id']
+	try:
+		start_date=str(request.form['start_date'])
+		end_date=str(request.form['end_date'])
+		if start_date>end_date:
+			return render_template('commission.html', message=['wrong start or end date']);
+		query = 'select sum(price)*0.1 as tot_commission\
+				from purchases natural join ticket natural join flight\
+				where booking_agent_id=%s and purchase_date>=%s and purchase_date<=%s';
+		cursor.execute(query, (b_id, start_date, end_date))
+		data = cursor.fetchone()
+		commission = data['tot_commission']
+		if commission==None:
+			commission=0;
+		query = 'select count(ticket_id) as tot_ticket\
+				from purchases natural join ticket natural join flight\
+				where booking_agent_id=%s and purchase_date>=%s and purchase_date<=%s';
+		cursor.execute(query, (b_id, start_date, end_date))
+		data = cursor.fetchone()
+		ticket = data['tot_ticket']
+		ans = ['Your total commission of this time period is %d'%(commission),
+			   'Your total ticket sold of this time period is %d'%(ticket)];
+		return render_template('commission.html', message=ans)
+	except:
+		start_date = (date.today()-timedelta(days=30)).isoformat()
+		end_date = date.today().isoformat()
+		print(start_date)
+		print(end_date)
+		query = 'select sum(price)*0.1 as tot_commission\
+				from purchases natural join ticket natural join flight\
+				where booking_agent_id=%s and purchase_date>=%s and purchase_date<=%s';
+		cursor.execute(query, (b_id, start_date, end_date))
+		data = cursor.fetchone()
+		commission = data['tot_commission']
+		if commission==None:
+			commission=0;
+		query = 'select count(ticket_id) as tot_ticket\
+				from purchases natural join ticket natural join flight\
+				where booking_agent_id=%s and purchase_date>=%s and purchase_date<=%s';
+		cursor.execute(query, (b_id, start_date, end_date))
+		data = cursor.fetchone()
+		ticket = data['tot_ticket']
+		if ticket!=0:
+			commission = commission / ticket;
+		ans = ['Your average commission per ticket of past 30 days is %.2f'%(commission),
+			   'Your total ticket sold of past 30 days is %d'%(ticket)];
+		return render_template('commission.html', message=ans)
+
+				
 @app.route('/logout')
 def logout():
 	session.pop('username')
