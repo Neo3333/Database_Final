@@ -60,6 +60,33 @@
 <a href="/viewCommission">View my commission</a>
 
 {% endif %}
+
+{% if usertype == 'airline_staff' %}
+<form action="/viewMyFlightStaff" method="POST">
+    <h1>Search flight of your airline by source/end city, departure/arrival date </h1>
+    <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
+    <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
+    <input type="date" name = "start_date"> </br>
+    <input type="date" name = "end_date"> </br>
+    <input type="submit" value = Search />
+</form>
+
+<form action="/createFlight" method="POST">
+    <h1> Create a new flight </h1>
+    <input type="text" name = "flight_num" placeholder="e.g. UNITED AIRLINE"> </br>
+    <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
+    <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
+    <input type="datetime-local" name = "dept_time_1"> </br>
+    <input type="datetime-local" name = "arr_time_1"> </br>
+    <input type="text" name = "price" placeholder="e.g. 2000"> </br>
+    <input type="text" name = "airplane_id" placeholder="e.g. 12345"> </br>
+    <input type="submit" value = Create />
+    
+</form>
+
+
+
+{% endif %}
     
 </body>
 

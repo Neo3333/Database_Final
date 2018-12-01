@@ -280,7 +280,6 @@ def purchaseC2(airline_name,flight_num):
     cursor=conn.cursor()
     message = None
     query_0 = 'SELECT seats_left FROM flight WHERE airline_name = %s AND flight_num = %s'
-    cursor.execute(query_0,(airline_name,flight_num))
     data_0 = cursor.fetchone()
     seats_left = int(data_0['seats_left'])
     if (seats_left > 0):
@@ -547,7 +546,83 @@ def viewCommission():
 			   'Your total ticket sold of past 30 days is %d'%(ticket)];
 		return render_template('commission.html', message=ans)
 
-				
+@app.route('/viewMyFlightStaff', methods=['GET','POST'])
+def viewMyFlightStaff():
+    
+    dept_airport = request.form['dept_airport']
+    arr_airport = request.form['arr_airport']
+    start_date = str(request.form['start_date'])
+    end_date = str(request.form['end_date'])
+    username = session['username']
+    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+    cursor = conn.cursor()
+    cursor.execute(query_0,(username))
+    data_0 = cursor.fetchone()
+    airline_name = data_0['airline_name']
+    control_list = []
+    if dept_airport!='':
+        control_list.append("departure_airport = '%s'"%(dept_airport))
+    if arr_airport!='':
+        control_list.append("arrival_airport = '%s'"%(arr_airport))
+    if start_date!='':
+        control_list.append("DATE(departure_time)>'%s'"%(start_date))
+    if end_date!='':
+        control_list.append("DATE(arrival_time)<'%s'"%(end_date))
+    if len(control_list) == 0:
+        query_1 = "SELECT * From flight WHERE airline_name = '%s' AND \
+         DATE(departure_time) > CURDATE() AND \
+         DATE(departure_time) < DATE_ADD(CURDATE(), INTERVAL 1 MONTH)"%(airline_name)
+    else:
+        query_1 = "SELECT * FROM flight WHERE airline_name = '%s' AND "%(airline_name) + " AND ".join(control_list)
+    cursor.execute(query_1)
+    data_1 = cursor.fetchall()
+    conn.commit()
+    cursor.close()
+    return render_template('search_results.html',result = data_1)
+
+@app.route('/createFlight' , methods=['GET','POST'])
+def createFlight():
+
+    dept_airport = request.form['dept_airport']
+    arr_airport = request.form['arr_airport']
+    dept_time_1 = request.form['dept_time_1']
+    arr_time_1 = request.form['arr_time_1']
+    flight_num = request.form['flight_num']
+    price = request.form['price']
+    airplane_id = request.form['airplane_id']
+    if (dept_airport==''or arr_airport=='' or dept_time_1=='' or arr_time_1=='' or price=='' or airplane_id=='' or flight_num==''):
+        message = 'Please provide all the information'
+        return render_template('purchase.html',message = message)
+    
+    dept_time = dept_time_1[:10] + ' ' + dept_time_1[11:]
+    dept_y = int(dept_time_1[:4])
+    dept_m = int(dept_time_1[5:7])
+    dept_d = int(dept_time_1[8:10])
+    dept_date = date(dept_y,dept_m,dept_d)
+    if (dept_date <= date.today()):
+        message = 'Please Provide valid information'
+        return render_template('purchase.html',message=message)
+    arr_time = arr_time_1[:10] + ' ' + arr_time_1[11:]
+    username = session['username']
+    cursor = conn.cursor()
+    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+    cursor.execute(query_0,(username))
+    data_0 = cursor.fetchone()
+    airline_name =str(data_0['airline_name'])
+    query_1 = 'SELECT seats FROM airplane WHERE airplane_id = %s AND airline_name = %s'
+    cursor.execute(query_1,(airplane_id,airline_name))
+    data_1 = cursor.fetchone()
+    if data_1 == None:
+        message = 'Please provide valid information'
+        return render_template('purchase.html', message = message)
+    seats_left = data_1['seats']
+    query_2 = 'INSERT INTO flight VALUES(%s,%s,%s,%s,%s,%s,%s,"upcoming",%s,%s)'
+    cursor.execute(query_2,(airline_name,flight_num,dept_airport,dept_time,arr_airport,arr_time,price,airplane_id,seats_left))
+    conn.commit()
+    cursor.close()
+    message = 'Creation complete'
+    return render_template('purchase.html',message = message)
+
 @app.route('/logout')
 def logout():
 	session.pop('username')
