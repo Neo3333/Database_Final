@@ -4,6 +4,27 @@
 </head>
 <body>
     <h2>{{message}}</h2>
+	
+	{% if data %}
+		<style type="text/css">
+			table, th, td{
+				border: 1px solid black;
+			}
+		</style>
+		<table>
+			{% for k in data[0].keys() %}
+			 <th>{{k}}</th>
+			{% endfor %}
+			{% for line in data %}
+				<tr>
+					{% for k in data[0].keys() %}
+						<td>{{line[k]}}</td>
+					{% endfor %}
+				</tr>
+			{% endfor %}
+		</table> 
+	{% endif %}
+	
     <a href='/'>Back</a>
     </body>
 </html>

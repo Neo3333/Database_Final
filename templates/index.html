@@ -73,18 +73,38 @@
 
 <form action="/createFlight" method="POST">
     <h1> Create a new flight </h1>
-    <input type="text" name = "flight_num" placeholder="e.g. UNITED AIRLINE"> </br>
-    <input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>
-    <input type="text" name = "arr_airport" placeholder="e.g. JFK"> </br>
-    <input type="datetime-local" name = "dept_time_1"> </br>
-    <input type="datetime-local" name = "arr_time_1"> </br>
-    <input type="text" name = "price" placeholder="e.g. 2000"> </br>
-    <input type="text" name = "airplane_id" placeholder="e.g. 12345"> </br>
+    <input type="text" name = "flight_num" placeholder="e.g. 123" /required> </br>
+    <input type="text" name = "dept_airport" placeholder="e.g. PVG" /required> </br>
+    <input type="text" name = "arr_airport" placeholder="e.g. JFK" /required> </br>
+    <input type="datetime-local" name = "dept_time_1" /required> </br>
+    <input type="datetime-local" name = "arr_time_1" /required> </br>
+    <input type="text" name = "price" placeholder="e.g. 2000" /required> </br>
+    <input type="text" name = "airplane_id" placeholder="e.g. 12345" /required> </br>
     <input type="submit" value = Create />
-    
 </form>
 
+<form action="/changeFlightStatus" method="POST">
+    <h1>Change Flight Status </h1>
+    <input type="text" name = "airline_name" placeholder="e.g. China Eastern" /required></br>
+    <input type="text" name = "flight_num" placeholder="e.g. 123" /required> </br>
+    <input type="text" name = "new_status" placeholder="e.g. delayed" /required> </br>
+    <input type="submit" value = Update />
+</form>
 
+<form action="/addAirplane" method="POST">
+    <h1>Add Airplane </h1>
+    <input type="text" name = "airline_name" placeholder="e.g. China Eastern" /required></br>
+    <input type="text" name = "airplane_id" placeholder="e.g. 1" /required> </br>
+    <input type="text" name = "seats" placeholder="e.g. 200" /required> </br>
+    <input type="submit" value = Add />
+</form>
+
+<form action="/addAirport" method="POST">
+    <h1>Add Airplane </h1>
+    <input type="text" name = "airport_name" placeholder="e.g. SHA" /required></br>
+    <input type="text" name = "airport_city" placeholder="e.g. Shanghai" /required> </br>
+    <input type="submit" value = Add />
+</form>
 
 {% endif %}
     

@@ -548,80 +548,180 @@ def viewCommission():
 
 @app.route('/viewMyFlightStaff', methods=['GET','POST'])
 def viewMyFlightStaff():
-    
-    dept_airport = request.form['dept_airport']
-    arr_airport = request.form['arr_airport']
-    start_date = str(request.form['start_date'])
-    end_date = str(request.form['end_date'])
-    username = session['username']
-    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
-    cursor = conn.cursor()
-    cursor.execute(query_0,(username))
-    data_0 = cursor.fetchone()
-    airline_name = data_0['airline_name']
-    control_list = []
-    if dept_airport!='':
-        control_list.append("departure_airport = '%s'"%(dept_airport))
-    if arr_airport!='':
-        control_list.append("arrival_airport = '%s'"%(arr_airport))
-    if start_date!='':
-        control_list.append("DATE(departure_time)>'%s'"%(start_date))
-    if end_date!='':
-        control_list.append("DATE(arrival_time)<'%s'"%(end_date))
-    if len(control_list) == 0:
-        query_1 = "SELECT * From flight WHERE airline_name = '%s' AND \
+	username = session['username']
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	dept_airport = request.form['dept_airport']
+	arr_airport = request.form['arr_airport']
+	start_date = str(request.form['start_date'])
+	end_date = str(request.form['end_date'])
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor = conn.cursor()
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name = data_0['airline_name']
+	control_list = []
+	if dept_airport!='':
+		control_list.append("departure_airport = '%s'"%(dept_airport))
+	if arr_airport!='':
+		control_list.append("arrival_airport = '%s'"%(arr_airport))
+	if start_date!='':
+		control_list.append("DATE(departure_time)>'%s'"%(start_date))
+	if end_date!='':
+		control_list.append("DATE(arrival_time)<'%s'"%(end_date))
+	if len(control_list) == 0:
+		query_1 = "SELECT * From flight WHERE airline_name = '%s' AND \
          DATE(departure_time) > CURDATE() AND \
          DATE(departure_time) < DATE_ADD(CURDATE(), INTERVAL 1 MONTH)"%(airline_name)
-    else:
-        query_1 = "SELECT * FROM flight WHERE airline_name = '%s' AND "%(airline_name) + " AND ".join(control_list)
-    cursor.execute(query_1)
-    data_1 = cursor.fetchall()
-    conn.commit()
-    cursor.close()
-    return render_template('search_results.html',result = data_1)
+	else:
+		query_1 = "SELECT * FROM flight WHERE airline_name = '%s' AND "%(airline_name) + " AND ".join(control_list)
+	cursor.execute(query_1)
+	data_1 = cursor.fetchall()
+	conn.commit()
+	cursor.close()
+	return render_template('search_results.html',result = data_1)
 
 @app.route('/createFlight' , methods=['GET','POST'])
 def createFlight():
+	username = session['username']
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	dept_airport = request.form['dept_airport']
+	arr_airport = request.form['arr_airport']
+	dept_time_1 = request.form['dept_time_1']
+	arr_time_1 = request.form['arr_time_1']
+	flight_num = request.form['flight_num']
+	price = request.form['price']
+	airplane_id = request.form['airplane_id']
+	dept_time = dept_time_1[:10] + ' ' + dept_time_1[11:]
+	dept_y = int(dept_time_1[:4])
+	dept_m = int(dept_time_1[5:7])
+	dept_d = int(dept_time_1[8:10])
+	dept_date = date(dept_y,dept_m,dept_d)
+	if (dept_date <= date.today()):
+		message = 'Please Provide valid information'
+		return render_template('purchase.html',message=message)
+	arr_time = arr_time_1[:10] + ' ' + arr_time_1[11:]
+	username = session['username']
+	cursor = conn.cursor()
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name =str(data_0['airline_name'])
+	query_1 = 'SELECT seats FROM airplane WHERE airplane_id = %s AND airline_name = %s'
+	cursor.execute(query_1,(airplane_id,airline_name))
+	data_1 = cursor.fetchone()
+	if data_1 == None:
+		message = 'Please provide valid information'
+		return render_template('purchase.html', message = message)
+	seats_left = data_1['seats']
+	query_2 = 'INSERT INTO flight VALUES(%s,%s,%s,%s,%s,%s,%s,"upcoming",%s,%s)'
+	cursor.execute(query_2,(airline_name,flight_num,dept_airport,dept_time,arr_airport,arr_time,price,airplane_id,seats_left))
+	conn.commit()
+	message = 'Creation complete'
+	query = "SELECT * \
+			FROM flight \
+			WHERE airline_name=%s AND DATE(departure_time)>=CURDATE() AND DATE(departure_time)<=DATE_ADD(CURDATE(), INTERVAL 1 MONTH) AND status='upcoming'"
+	cursor.execute(query, (airline_name))
+	data=cursor.fetchall()
+	cursor.close()
+	return render_template('purchase.html',message = message, data=data)
 
-    dept_airport = request.form['dept_airport']
-    arr_airport = request.form['arr_airport']
-    dept_time_1 = request.form['dept_time_1']
-    arr_time_1 = request.form['arr_time_1']
-    flight_num = request.form['flight_num']
-    price = request.form['price']
-    airplane_id = request.form['airplane_id']
-    if (dept_airport==''or arr_airport=='' or dept_time_1=='' or arr_time_1=='' or price=='' or airplane_id=='' or flight_num==''):
-        message = 'Please provide all the information'
-        return render_template('purchase.html',message = message)
-    
-    dept_time = dept_time_1[:10] + ' ' + dept_time_1[11:]
-    dept_y = int(dept_time_1[:4])
-    dept_m = int(dept_time_1[5:7])
-    dept_d = int(dept_time_1[8:10])
-    dept_date = date(dept_y,dept_m,dept_d)
-    if (dept_date <= date.today()):
-        message = 'Please Provide valid information'
-        return render_template('purchase.html',message=message)
-    arr_time = arr_time_1[:10] + ' ' + arr_time_1[11:]
-    username = session['username']
-    cursor = conn.cursor()
-    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
-    cursor.execute(query_0,(username))
-    data_0 = cursor.fetchone()
-    airline_name =str(data_0['airline_name'])
-    query_1 = 'SELECT seats FROM airplane WHERE airplane_id = %s AND airline_name = %s'
-    cursor.execute(query_1,(airplane_id,airline_name))
-    data_1 = cursor.fetchone()
-    if data_1 == None:
-        message = 'Please provide valid information'
-        return render_template('purchase.html', message = message)
-    seats_left = data_1['seats']
-    query_2 = 'INSERT INTO flight VALUES(%s,%s,%s,%s,%s,%s,%s,"upcoming",%s,%s)'
-    cursor.execute(query_2,(airline_name,flight_num,dept_airport,dept_time,arr_airport,arr_time,price,airplane_id,seats_left))
-    conn.commit()
-    cursor.close()
-    message = 'Creation complete'
-    return render_template('purchase.html',message = message)
+@app.route('/changeFlightStatus', methods=['GET','POST'])
+def changeFlightStatus():
+	username = session['username']
+	usertype = session['type']
+	if usertype!='airline_staff':
+		error='Unauthorized operation'
+		return render_template('index.html', username=username, usertype=usertype, error=error)
+	airline_name=request.form['airline_name']
+	flight_num=int(request.form['flight_num'])
+	new_status=request.form['new_status']
+	cursor = conn.cursor()
+	query = "SELECT *\
+			FROM flight\
+			WHERE airline_name='%s' and flight_num=%s"%(airline_name, flight_num)
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data==None:
+		message = 'Please provide valid information'
+		return render_template('purchase.html', message = message)
+	query = 'UPDATE flight\
+			SET status=%s\
+			WHERE airline_name=%s and flight_num=%s'
+	cursor.execute(query,(new_status, airline_name, flight_num))
+	conn.commit()
+	cursor.close()
+	message = 'Update complete'
+	return render_template('purchase.html',message = message)
+
+@app.route('/addAirplane', methods=['GET','POST'])
+def addAirplane():
+	username = session['username']
+	usertype = session['type']
+	if usertype!='airline_staff':
+		error='Unauthorized operation'
+		return render_template('index.html', username=username, usertype=usertype, error=error)
+	airline_name=request.form['airline_name']
+	airplane_id=request.form['airplane_id']
+	seats=request.form['seats']
+	cursor = conn.cursor()
+	query="SELECT * \
+			FROM airline \
+			WHERE airline_name='%s'"%(airline_name)
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data==None:
+		message = 'Please provide valid information'
+		return render_template('purchase.html', message = message)
+	query="SELECT * \
+			FROM airplane \
+			WHERE airline_name='%s' and airplane_id=%s"%(airline_name,airplane_id)
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data!=None:
+		message = 'Already Exsits'
+		return render_template('purchase.html', message = message)
+	query="INSERT INTO airplane VALUES ('%s', %s, %s)"%(airline_name,airplane_id,seats)
+	cursor.execute(query)
+	query="SELECT * \
+			FROM airplane \
+			WHERE airline_name='%s'"%(airline_name)
+	cursor.execute(query)
+	data=cursor.fetchall()
+	conn.commit()	
+	cursor.close()
+	message = 'Add complete'
+	return render_template('purchase.html',message = message, data=data)
+
+@app.route('/addAirport', methods=['GET','POST'])
+def addAirport():
+	username = session['username']
+	usertype = session['type']
+	if usertype!='airline_staff':
+		error='Unauthorized operation'
+		return render_template('index.html', username=username, usertype=usertype, error=error)
+	airport_name=request.form['airport_name']
+	airport_city=request.form['airport_city']
+	cursor = conn.cursor()
+	query="SELECT * \
+			FROM airport \
+			WHERE airport_name='%s'"%(airport_name)
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data!=None:
+		message = 'Already Exsits'
+		return render_template('purchase.html', message = message)
+	query="INSERT INTO airport VALUES ('%s', '%s')"%(airport_name,airport_city)
+	cursor.execute(query)
+	conn.commit()	
+	cursor.close()
+	message = 'Add complete'
+	return render_template('purchase.html',message = message)
 
 @app.route('/logout')
 def logout():
