@@ -314,7 +314,10 @@ def checkSpending():
 		end_date=str(request.form['end_date'])+"-01"
 	except:
 		end_date = date.today().isoformat()[:-3]+"-01"
-		start_date = (date.today()-timedelta(days=365)).isoformat()[:-3]+"-01"
+		end_y=int(end_date[:4])
+		end_m=int(end_date[5:7])
+		end_y-=1
+		start_date = start_date = date(end_y, end_m, 1).isoformat()
 	if end_date<start_date:
 		error = 'Invalid Input'
 		return render_template('chart.html', error = error)
@@ -722,6 +725,154 @@ def addAirport():
 	cursor.close()
 	message = 'Add complete'
 	return render_template('purchase.html',message = message)
+
+@app.route('/checkTop5Agent', methods=['GET','POST'])
+def checkTop5Agent():
+	username=session['username']
+	cursor = conn.cursor()
+	message=[]
+	query = 'SELECT booking_agent_id, COUNT(DISTINCT ticket_id) AS count \
+			FROM ticket NATURAL JOIN purchases \
+            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date <=CURDATE() AND booking_agent_id is not NULL\
+            GROUP BY booking_agent_id ORDER BY count DESC'
+	cursor.execute(query)
+	data=cursor.fetchall()[:5]
+	message.append('Top 5 agent last month by ticket number:')
+	for i in range(len(data)):
+		message.append('%d: %s, sold %d tickets'%(i+1, data[i]['booking_agent_id'],data[i]['count']))
+	query = 'SELECT booking_agent_id, COUNT(DISTINCT ticket_id) AS count \
+			FROM ticket NATURAL JOIN purchases \
+            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date <=CURDATE() AND booking_agent_id is not NULL\
+            GROUP BY booking_agent_id ORDER BY count DESC'
+	cursor.execute(query)
+	data=cursor.fetchall()[:5]
+	message.append('Top 5 agent last year by ticket number:')
+	for i in range(len(data)):
+		message.append('%d: %s, sold %d tickets'%(i+1, data[i]['booking_agent_id'],data[i]['count']))
+	query = 'SELECT booking_agent_id, sum(price)*0.1 AS count \
+			FROM ticket NATURAL JOIN purchases  NATURAL JOIN flight\
+            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE() AND booking_agent_id is not NULL \
+            GROUP BY booking_agent_id ORDER BY count DESC'
+	cursor.execute(query)
+	data=cursor.fetchall()[:5]
+	message.append('Top 5 agent last year by commission:')
+	for i in range(len(data)):
+		message.append('%d: %s, get %.1f commission'%(i+1, data[i]['booking_agent_id'],data[i]['count']))
+	return render_template('topagent.html', message=message)
+
+@app.route('/viewReport', methods=['GET', 'POST'])
+def viewReport():
+	try:
+		start_date=str(request.form['start_date'])+"-01"
+		end_date=str(request.form['end_date'])+"-01"
+	except:
+		i=int(request.args['interval'])
+		end_date = date.today().isoformat()[:-3]+"-01"
+		end_y=int(end_date[:4])
+		end_m=int(end_date[5:7])
+		if i==1:
+			end_m-=1
+			if end_m==0:
+				end_m=12
+				end_y-=1
+		elif i==2:
+			end_y-=1
+		start_date = date(end_y, end_m, 1).isoformat()
+	if end_date<start_date:
+		error = 'Invalid Input'
+		return render_template('chart.html', error = error)
+	print(start_date, end_date)
+	cursor=conn.cursor()
+	query= 'SELECT count(DISTINCT ticket_id) as tot\
+			FROM purchases\
+			WHERE purchase_date>=%s\
+			and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH)'
+	cursor.execute(query, (start_date, end_date))
+	total_spending = cursor.fetchone()
+	total_spending = total_spending['tot']
+	print(total_spending)
+	if total_spending==None:
+		total_spending=0
+	else:
+		total_spending=int(total_spending)
+	cur_y=int(start_date[:4])
+	cur_m=int(start_date[5:7])
+	end_y=int(end_date[:4])
+	end_m=int(end_date[5:7])
+	end_m+=1;
+	if end_m>12:
+		end_m=1;
+		end_y+=1;
+	data=[]
+	label=[]
+	while not (cur_y==end_y and cur_m==end_m):
+		start_date = date(cur_y, cur_m, 1).isoformat()
+		end_date = date(cur_y, cur_m, 1).isoformat()
+		print(start_date, end_date)
+		query = 'SELECT count(DISTINCT ticket_id) as tot\
+			FROM purchases\
+			WHERE purchase_date>=%s\
+			and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH)'
+		cursor.execute(query, (start_date, end_date))
+		cur_spending = cursor.fetchone()
+		cur_spending = cur_spending['tot']
+		print(cur_spending)
+		if cur_spending==None:
+			cur_spending=0;
+		label.append(start_date[:7])
+		data.append(int(cur_spending))
+		cur_m+=1
+		if cur_m>12:
+			cur_m=1
+			cur_y+=1
+	return render_template('chart.html', total_spending=total_spending, data=data, label=label, act='Report')
+
+@app.route('/compareRevenue', methods=['GET', 'POST'])
+def compareRevenue():
+	cursor=conn.cursor()
+	data1=[]
+	label=['direct sales', 'indirect sales']
+	data2=[]
+	query = "SELECT count(DISTINCT ticket_id) as tot \
+			FROM purchases \
+			WHERE booking_agent_id is NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date<=CURDATE()"
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data==None:
+		data1.append(0)
+	else:
+		data1.append(data['tot'])
+	query = "SELECT count(DISTINCT ticket_id) as tot \
+			FROM purchases \
+			WHERE booking_agent_id is not NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date<=CURDATE()"
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data==None:
+		data1.append(0)
+	else:
+		data1.append(data['tot'])	
+	
+	query = "SELECT count(DISTINCT ticket_id) as tot \
+			FROM purchases \
+			WHERE booking_agent_id is NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE()"
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data==None:
+		data2.append(0)
+	else:
+		data2.append(data['tot'])
+	query = "SELECT count(DISTINCT ticket_id) as tot \
+			FROM purchases \
+			WHERE booking_agent_id is not NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE()"
+	cursor.execute(query)
+	data=cursor.fetchone()
+	if data==None:
+		data2.append(0)
+	else:
+		data2.append(data['tot'])
+	return render_template('pie.html', data1=data1, label1=label, data2=data2, label2=label)
+
+	
 
 @app.route('/logout')
 def logout():

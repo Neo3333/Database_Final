@@ -1,0 +1,13 @@
+<html>
+<head>
+<title>Top 5 booking agents</title>    
+</head>
+<body>
+	{% if message %}
+		{% for line in message %}
+			<h2>{{line}}</h2>
+		{% endfor %}
+	{% endif %}
+    <a href='/'>Back</a>
+    </body>
+</html>

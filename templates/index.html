@@ -100,12 +100,15 @@
 </form>
 
 <form action="/addAirport" method="POST">
-    <h1>Add Airplane </h1>
+    <h1>Add Airport </h1>
     <input type="text" name = "airport_name" placeholder="e.g. SHA" /required></br>
     <input type="text" name = "airport_city" placeholder="e.g. Shanghai" /required> </br>
     <input type="submit" value = Add />
 </form>
 
+<a href="/checkTop5Agent">Check top booking agents</a></br>
+<a href="{{url_for('viewReport',interval=1) }}">View Report</a></br>
+<a href="/compareRevenue">Comparison of Revenue earned</a></br>
 {% endif %}
     
 </body>

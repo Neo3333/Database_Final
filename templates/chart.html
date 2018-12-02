@@ -23,17 +23,32 @@
 			<input type="submit" value = Check />
 		</form>
 		{% if data %}
-		{% if total_spending %}
-			<p>Your total spending in this time period is: {{total_spending}}</p></br>
+			{% if total_spending %}
+				<p>Your total spending in this time period is: {{total_spending}}</p></br>
+			{% endif %}
+		{% endif %}
+	{% endif %}
+	
+	{% if act=='Report' %}
+		<form action="/viewReport" method="POST">
+			<h1>View Report</h1></br>
+			<input type="month" name = "start_date" /required > to <input type="month" name = "end_date" /required > </br>
+			<input type="submit" value = Check />
+		</form>
+		<a href="{{url_for('viewReport',interval=1) }}">Past Month</a>
+		<a href="{{url_for('viewReport',interval=2) }}">Past Year</a>
+		{% if data %}
+			{% if total_spending %}
+				<p>{{total_spending}} tickets sold in this time period.</p></br>
+			{% endif %}
 		{% endif %}
 	{% endif %}
 	
 	<div id="container" style="width: 75%;">
 		<canvas id="canvas"></canvas>
 	</div>
-	
+	{% if data %}
 	<script>
-	
 		var color = Chart.helpers.color;
 		var barChartData = {
 			labels: [],
