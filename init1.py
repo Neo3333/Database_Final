@@ -280,6 +280,7 @@ def purchaseC2(airline_name,flight_num):
     cursor=conn.cursor()
     message = None
     query_0 = 'SELECT seats_left FROM flight WHERE airline_name = %s AND flight_num = %s'
+    cursor.execute(query_0,(airline_name,flight_num))
     data_0 = cursor.fetchone()
     seats_left = int(data_0['seats_left'])
     if (seats_left > 0):
@@ -828,6 +829,7 @@ def viewReport():
 	return render_template('chart.html', total_spending=total_spending, data=data, label=label, act='Report')
 
 @app.route('/compareRevenue', methods=['GET', 'POST'])
+
 def compareRevenue():
 	cursor=conn.cursor()
 	data1=[]
@@ -872,7 +874,82 @@ def compareRevenue():
 		data2.append(data['tot'])
 	return render_template('pie.html', data1=data1, label1=label, data2=data2, label2=label)
 
-	
+@app.route('/viewFrequentCustomer', methods=['GET', 'POST'])
+def viewFrequentCustomer():
+    username = session['username']
+    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+    cursor = conn.cursor()
+    cursor.execute(query_0,(username))
+    data_0 = cursor.fetchone()
+    airline_name = data_0['airline_name']
+    query_1 = 'SELECT customer_email, COUNT(ticket_id) AS count FROM purchases NATURAL JOIN ticket \
+               WHERE airline_name = %s GROUP BY customer_email ORDER BY count DESC'
+    cursor.execute(query_1,(airline_name))
+    data_1 = cursor.fetchall()
+    if data_1 == None:
+        message = 'There is no customer currently'
+    else:
+        mfc = data_1[0]['customer_email']
+        message = 'The most frequent customer of '+ airline_name + ' is '+ mfc
+    query_2 = 'SELECT DISTINCT customer_email FROM purchases NATURAL JOIN ticket \
+               WHERE airline_name = %s'
+    cursor.execute(query_2,(airline_name))
+    data_2 = cursor.fetchall()
+    conn.commit()
+    cursor.close()
+    return render_template('frequentCustomer.html',message = message, result = data_2)
+
+@app.route('/checkCustomerFlight/<customer_email>',methods=['GET','POST'])
+def checkCustomerFlight(customer_email):
+    print(customer_email)
+    username = session['username']
+    cursor = conn.cursor()
+    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+    cursor.execute(query_0,(username))
+    data_0 = cursor.fetchone()
+    airline_name = data_0['airline_name']
+    query_1 = 'SELECT * FROM ticket NATURAL JOIN flight NATURAL JOIN purchases \
+               WHERE airline_name = %s AND customer_email = %s'
+    cursor.execute(query_1,(airline_name,customer_email))
+    data_1 = cursor.fetchall()
+    print(data_1)
+    conn.commit()
+    cursor.close()
+    return render_template('search_results.html',result = data_1,flag = 1)
+
+@app.route('/viewTopDestination', methods=['GET', 'POST'])
+def viewTopDestination():
+    username = session['username']
+    cursor = conn.cursor()
+    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+    cursor.execute(query_0,(username))
+    data_0 = cursor.fetchone()
+    airline_name = data_0['airline_name']
+    message = []
+    message.append('Top 3 popular destination in the last 3 months:')
+    query_1 = 'SELECT arrival_airport,COUNT(arrival_airport) AS count FROM flight WHERE airline_name = %s AND \
+              DATE(departure_time) < CURDATE() AND DATE(departure_time) > DATE_ADD(CURDATE(),INTERVAL -3 MONTH) \
+              GROUP BY arrival_airport ORDER BY count DESC'
+    cursor.execute(query_1,(airline_name))
+    data_1 = cursor.fetchall()
+    data = data_1[:4]
+    print(data)
+    for i in range(len(data)):
+        print(data[i])
+        message.append('%d:%s appears %d times'%(i+1,data[i]['arrival_airport'],data[i]['count']))
+    message.append('Top 3 popular destination in the last year:')
+    query_2 = 'SELECT arrival_airport,COUNT(arrival_airport) AS count FROM flight WHERE airline_name = %s AND \
+    DATE(departure_time) < CURDATE() AND DATE(departure_time) > DATE_ADD(CURDATE(),INTERVAL -12 MONTH) \
+    GROUP BY arrival_airport ORDER BY count DESC'
+    cursor.execute(query_2,(airline_name))
+    data_2 = cursor.fetchall()
+    data = data_2[:4]
+    for i in range(len(data)):
+         message.append('%d: %s, appears %d times'%(i+1, data[i]['arrival_airport'],data[i]['count']))
+    conn.commit()
+    cursor.close()
+    return render_template('topagent.html',message = message)
+
 
 @app.route('/logout')
 def logout():

@@ -1,0 +1,34 @@
+<html>
+<head>
+<title> Most Frequent Customer</title>
+</head>
+<body>
+    {% if message %}
+    <h2> {{message}}</h2>
+    {% endif %}
+    {% if result %}
+    <style type="text/css">
+        table, th, td{
+            border: 1px solid black;
+        }
+    </style>
+        <table>
+        {% for k in result[0].keys() %}
+            <th>{{k}}</th>
+        {% endfor %}
+        {% for line in result %}
+        <tr>
+            {% for k in result[0].keys() %}
+            <td>{{line[k]}}
+            </td>
+            <td>
+                <a href={{url_for('checkCustomerFlight',customer_email=line['customer_email'])}}> check </a>
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </table>
+    {% endif %}
+<a href="/">Back</a>
+</body>
+</html>
