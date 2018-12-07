@@ -3,6 +3,7 @@ import pymysql
 import hashlib
 from datetime import date
 from datetime import timedelta
+import hashlib
 
 #Initialize the app from Flask
 app = Flask(__name__)
@@ -96,6 +97,7 @@ def register():
 def registerCustomer():
 	username = request.form['username']
 	password = request.form['password']
+	password = hashlib.md5(password.encode('utf-8')).hexdigest()
 	name = request.form['name']
 	building_number = request.form['building_number']
 	street = request.form['street']
@@ -124,6 +126,7 @@ def registerCustomer():
 def registerStaff():
 	username = request.form['username']
 	password = request.form['password']
+	password = hashlib.md5(password.encode('utf-8')).hexdigest()
 	first_name = request.form['first_name']
 	last_name = request.form['last_name']
 	date_of_birth = str(request.form['date_of_birth'])
@@ -154,6 +157,7 @@ def registerAgent():
 	username = request.form['username']
 	password = request.form['password']
 	
+	password = hashlib.md5(password.encode('utf-8')).hexdigest()
 	cursor = conn.cursor()
 	query = 'SELECT * FROM booking_agent WHERE email = %s'
 	cursor.execute(query, (username))
@@ -184,6 +188,7 @@ def login():
 def loginCustomer():
 	username = request.form['username']
 	password = request.form['password']
+	password = hashlib.md5(password.encode('utf-8')).hexdigest()
 	cursor = conn.cursor()
 	query = 'SELECT * FROM customer WHERE email = %s and password = %s'
 	cursor.execute(query, (username, password))
@@ -201,6 +206,7 @@ def loginCustomer():
 def loginStaff():
 	username = request.form['username']
 	password = request.form['password']
+	password = hashlib.md5(password.encode('utf-8')).hexdigest()
 	cursor = conn.cursor()
 	query = 'SELECT * FROM airline_staff WHERE username = %s and password = %s'
 	cursor.execute(query, (username, password))
@@ -217,7 +223,8 @@ def loginStaff():
 @app.route('/loginAgent', methods=['GET', 'POST'])
 def loginAgent():
 	username = request.form['username']
-	password = request.form['password']
+	password = str(request.form['password'])
+	password = hashlib.md5(password.encode('utf-8')).hexdigest()
 	cursor = conn.cursor()
 	query = 'SELECT * FROM booking_agent WHERE email = %s and password = %s'
 	cursor.execute(query, (username, password))
@@ -642,10 +649,13 @@ def changeFlightStatus():
 	if usertype!='airline_staff':
 		error='Unauthorized operation'
 		return render_template('index.html', username=username, usertype=usertype, error=error)
-	airline_name=request.form['airline_name']
 	flight_num=int(request.form['flight_num'])
 	new_status=request.form['new_status']
 	cursor = conn.cursor()
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name =str(data_0['airline_name'])
 	query = "SELECT *\
 			FROM flight\
 			WHERE airline_name='%s' and flight_num=%s"%(airline_name, flight_num)
@@ -670,10 +680,13 @@ def addAirplane():
 	if usertype!='airline_staff':
 		error='Unauthorized operation'
 		return render_template('index.html', username=username, usertype=usertype, error=error)
-	airline_name=request.form['airline_name']
 	airplane_id=request.form['airplane_id']
 	seats=request.form['seats']
 	cursor = conn.cursor()
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name =str(data_0['airline_name'])
 	query="SELECT * \
 			FROM airline \
 			WHERE airline_name='%s'"%(airline_name)
@@ -731,30 +744,34 @@ def addAirport():
 def checkTop5Agent():
 	username=session['username']
 	cursor = conn.cursor()
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name =str(data_0['airline_name'])
 	message=[]
 	query = 'SELECT booking_agent_id, COUNT(DISTINCT ticket_id) AS count \
 			FROM ticket NATURAL JOIN purchases \
-            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date <=CURDATE() AND booking_agent_id is not NULL\
+            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date <=CURDATE() AND booking_agent_id is not NULL and airline_name=%s \
             GROUP BY booking_agent_id ORDER BY count DESC'
-	cursor.execute(query)
+	cursor.execute(query, (airline_name))
 	data=cursor.fetchall()[:5]
 	message.append('Top 5 agent last month by ticket number:')
 	for i in range(len(data)):
 		message.append('%d: %s, sold %d tickets'%(i+1, data[i]['booking_agent_id'],data[i]['count']))
 	query = 'SELECT booking_agent_id, COUNT(DISTINCT ticket_id) AS count \
 			FROM ticket NATURAL JOIN purchases \
-            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date <=CURDATE() AND booking_agent_id is not NULL\
+            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date <=CURDATE() AND booking_agent_id is not NULL and airline_name=%s \
             GROUP BY booking_agent_id ORDER BY count DESC'
-	cursor.execute(query)
+	cursor.execute(query, (airline_name))
 	data=cursor.fetchall()[:5]
 	message.append('Top 5 agent last year by ticket number:')
 	for i in range(len(data)):
 		message.append('%d: %s, sold %d tickets'%(i+1, data[i]['booking_agent_id'],data[i]['count']))
 	query = 'SELECT booking_agent_id, sum(price)*0.1 AS count \
 			FROM ticket NATURAL JOIN purchases  NATURAL JOIN flight\
-            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE() AND booking_agent_id is not NULL \
+            WHERE purchase_date >=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE() AND booking_agent_id is not NULL and airline_name=%s \
             GROUP BY booking_agent_id ORDER BY count DESC'
-	cursor.execute(query)
+	cursor.execute(query, (airline_name))
 	data=cursor.fetchall()[:5]
 	message.append('Top 5 agent last year by commission:')
 	for i in range(len(data)):
@@ -763,6 +780,7 @@ def checkTop5Agent():
 
 @app.route('/viewReport', methods=['GET', 'POST'])
 def viewReport():
+	username=session['username'];
 	try:
 		start_date=str(request.form['start_date'])+"-01"
 		end_date=str(request.form['end_date'])+"-01"
@@ -784,11 +802,15 @@ def viewReport():
 		return render_template('chart.html', error = error)
 	print(start_date, end_date)
 	cursor=conn.cursor()
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name =str(data_0['airline_name'])
 	query= 'SELECT count(DISTINCT ticket_id) as tot\
-			FROM purchases\
+			FROM purchases NATURAL JOIN ticket\
 			WHERE purchase_date>=%s\
-			and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH)'
-	cursor.execute(query, (start_date, end_date))
+			and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH) and airline_name=%s'
+	cursor.execute(query, (start_date, end_date, airline_name))
 	total_spending = cursor.fetchone()
 	total_spending = total_spending['tot']
 	print(total_spending)
@@ -811,10 +833,10 @@ def viewReport():
 		end_date = date(cur_y, cur_m, 1).isoformat()
 		print(start_date, end_date)
 		query = 'SELECT count(DISTINCT ticket_id) as tot\
-			FROM purchases\
+			FROM purchases NATURAL JOIN ticket\
 			WHERE purchase_date>=%s\
-			and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH)'
-		cursor.execute(query, (start_date, end_date))
+			and purchase_date<DATE_ADD(%s, INTERVAL 1 MONTH) and airline_name=%s'
+		cursor.execute(query, (start_date, end_date, airline_name))
 		cur_spending = cursor.fetchone()
 		cur_spending = cur_spending['tot']
 		print(cur_spending)
@@ -832,22 +854,27 @@ def viewReport():
 
 def compareRevenue():
 	cursor=conn.cursor()
+	username=session['username'];
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name =str(data_0['airline_name'])
 	data1=[]
 	label=['direct sales', 'indirect sales']
 	data2=[]
 	query = "SELECT count(DISTINCT ticket_id) as tot \
-			FROM purchases \
-			WHERE booking_agent_id is NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date<=CURDATE()"
-	cursor.execute(query)
+			FROM purchases NATURAL JOIN ticket\
+			WHERE booking_agent_id is NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date<=CURDATE() and airline_name=%s"
+	cursor.execute(query, (airline_name))
 	data=cursor.fetchone()
 	if data==None:
 		data1.append(0)
 	else:
 		data1.append(data['tot'])
 	query = "SELECT count(DISTINCT ticket_id) as tot \
-			FROM purchases \
-			WHERE booking_agent_id is not NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date<=CURDATE()"
-	cursor.execute(query)
+			FROM purchases NATURAL JOIN ticket \
+			WHERE booking_agent_id is not NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 MONTH) AND purchase_date<=CURDATE() and airline_name=%s" 
+	cursor.execute(query, (airline_name))
 	data=cursor.fetchone()
 	if data==None:
 		data1.append(0)
@@ -855,18 +882,18 @@ def compareRevenue():
 		data1.append(data['tot'])	
 	
 	query = "SELECT count(DISTINCT ticket_id) as tot \
-			FROM purchases \
-			WHERE booking_agent_id is NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE()"
-	cursor.execute(query)
+			FROM purchases NATURAL JOIN ticket \
+			WHERE booking_agent_id is NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE() and airline_name=%s"
+	cursor.execute(query, (airline_name))
 	data=cursor.fetchone()
 	if data==None:
 		data2.append(0)
 	else:
 		data2.append(data['tot'])
 	query = "SELECT count(DISTINCT ticket_id) as tot \
-			FROM purchases \
-			WHERE booking_agent_id is not NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE()"
-	cursor.execute(query)
+			FROM purchases NATURAL JOIN ticket \
+			WHERE booking_agent_id is not NULL AND purchase_date>=DATE_ADD(CURDATE(), INTERVAL -1 YEAR) AND purchase_date<=CURDATE() and airline_name=%s"
+	cursor.execute(query, (airline_name))
 	data=cursor.fetchone()
 	if data==None:
 		data2.append(0)
