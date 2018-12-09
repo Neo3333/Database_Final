@@ -23,14 +23,20 @@
             {% endfor %}
             {% if type == 'customer' %}
             <td>
-            <a href={{url_for('purchaseC2',airline_name=line['airline_name'],
-                flight_num=line['flight_num'])}}> buy </a>
+            <a href={{url_for('purchaseC2',airline_name=line['airline'],
+                flight_num=line['flight_number'])}}> buy </a>
             </td>
             {% endif %}
             {% if type == 'booking_agent' %}
             <td>
-            <a href={{url_for('purchaseA1',airline_name=line['airline_name'],
-                flight_num=line['flight_num'])}}> buy </a>
+            <a href={{url_for('purchaseA1',airline_name=line['airline'],
+                flight_num=line['flight_number'])}}> buy </a>
+            </td>
+            {% endif %}
+            {% if type == 'airline_staff' and flag_1 %}
+            <td>
+            <a href={{url_for('viewCustomer',airline_name=line['airline_name'],
+                flight_num=line['flight_num'])}}> check </a>
             </td>
             {% endif %}
         </tr>
@@ -42,7 +48,9 @@
 {% if flag %}
 
 <a href="/viewFrequentCustomer"> Back to last page </a></br>
+
 {% endif %}
+
 
 <a href="/">Back</a>
 

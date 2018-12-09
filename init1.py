@@ -38,11 +38,15 @@ def searchUpcomingFlights():
 		control_list.append("arr.airport_city = '%s'"%(arr_city))
 	
 	if len(control_list)==0:
-		query = "SELECT * \
+		query = "SELECT flight.arrival_time as arrival_time, flight.status as status, flight.flight_num as flight_number, \
+                flight.departure_time as departure_time, dept.airport_name as departure_airport, dept.airport_city as departure_city, \
+                arr.airport_name as arrival_airport, arr.airport_city as arrival_city, flight.seats_left as seats, flight.airline_name as airline, flight.price as price\
 				FROM (flight, airport as dept, airport as arr)\
 				WHERE flight.departure_airport=dept.airport_name and flight.arrival_airport=arr.airport_name AND flight.status = 'upcoming'"
 	else:
-		query = "SELECT * \
+		query = "SELECT flight.arrival_time as arrival_time, flight.status as status, flight.flight_num as flight_number, \
+				flight.departure_time as departure_time, dept.airport_name as departure_airport, dept.airport_city as departure_city, \
+				arr.airport_name as arrival_airport, arr.airport_city as arrival_city, flight.seats_left as seats, flight.airline_name as airline, flight.price as price\
 				FROM (flight, airport as dept, airport as arr) \
 				WHERE flight.departure_airport=dept.airport_name and flight.arrival_airport=arr.airport_name AND flight.status = 'upcoming' AND " + " AND ".join(control_list);
 	cursor.execute(query)
@@ -152,7 +156,7 @@ def registerStaff():
 		cursor.close()
 		return render_template('index.html')
 		
-@app.route('/registerAgent', methods=['GET', 'POST'])
+@app.route('/registerAgent', methods=['GET', 'POST'])	
 def registerAgent():
 	username = request.form['username']
 	password = request.form['password']
@@ -175,7 +179,7 @@ def registerAgent():
 		return render_template('register.html', error = error)
 	else:
 		ins = 'INSERT INTO booking_agent VALUES(%s,%s,%s)'
-		cursor.execute(ins,(username,password,max_id))
+		cursor.execute(ins,(username,password,max_id+1))
 		conn.commit()
 		cursor.close()
 		return render_template('index.html')
@@ -260,9 +264,9 @@ def viewMyFlight():
 	if arr_airport!='':
 		control_list.append("arrival_airport = '%s'"%(arr_airport))
 	if start_date!='':
-		control_list.append("DATE(departure_time) > '%s'"%(start_date))
+		control_list.append("DATE(departure_time) >= '%s'"%(start_date))
 	if end_date!='':
-		control_list.append("DATE(arrival_time) < '%s'"%(end_date))
+		control_list.append("DATE(departure_time) <= '%s'"%(end_date))
 	
 	if len(control_list) == 0:
 		query = "SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
@@ -439,9 +443,9 @@ def viewMyFlightAgent():
     if arr_airport!='':
         control_list.append("arrival_airport = '%s'"%(arr_airport))
     if start_date!='':
-        control_list.append("DATE(departure_time)>'%s'"%(start_date))
+        control_list.append("DATE(purchase_date)>'%s'"%(start_date))
     if end_date!='':
-        control_list.append("DATE(arrival_time)<'%s'"%(end_date))
+        control_list.append("DATE(purchase_date)<'%s'"%(end_date))
     cursor = conn.cursor()
     query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
     cursor.execute(query_0,(username))
@@ -459,6 +463,14 @@ def viewMyFlightAgent():
     conn.commit()
     cursor.close()
     return render_template('search_results.html',result = data_1)
+
+@app.route('/viewCustomer/<airline_name>/<flight_num>',methods=['GET','POST'])
+def viewCustomer(airline_name,flight_num):
+	cursor = conn.cursor()
+	query = 'SELECT DISTINCT customer_email FROM ticket NATURAL JOIN purchases WHERE airline_name =%s AND flight_num=%s'
+	cursor.execute(query,(airline_name,str(flight_num)))
+	data = cursor.fetchall()
+	return render_template('search_results.html',result=data)
 
 @app.route('/checkTop5', methods=['GET', 'POST'])
 def checkTop5():
@@ -592,7 +604,8 @@ def viewMyFlightStaff():
 	data_1 = cursor.fetchall()
 	conn.commit()
 	cursor.close()
-	return render_template('search_results.html',result = data_1)
+	flag_1 = 1
+	return render_template('search_results.html',result = data_1,type = 'airline_staff',flag_1 = flag_1)
 
 @app.route('/createFlight' , methods=['GET','POST'])
 def createFlight():
