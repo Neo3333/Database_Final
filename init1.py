@@ -253,6 +253,10 @@ def hello():
 
 @app.route('/viewMyFlight', methods=['GET', 'POST'])
 def viewMyFlight():
+	usertype = session['type']
+	if usertype!='customer':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	dept_airport = request.form['dept_airport']
 	arr_airport = request.form['arr_airport']
 	start_date = str(request.form['start_date'])
@@ -287,38 +291,46 @@ def viewMyFlight():
 @app.route('/purchaseC2/<airline_name>/<flight_num>',methods=['GET','POST'])
 def purchaseC2(airline_name,flight_num):
     #ticket_id = request.form['ticket_id']
-    username = session['username']
-    cursor=conn.cursor()
-    message = None
-    query_0 = 'SELECT seats_left FROM flight WHERE airline_name = %s AND flight_num = %s'
-    cursor.execute(query_0,(airline_name,flight_num))
-    data_0 = cursor.fetchone()
-    seats_left = int(data_0['seats_left'])
-    if (seats_left > 0):
-        query_1 = 'SELECT MAX(ticket_id) FROM ticket'
-        cursor.execute(query_1)
-        data_1 = cursor.fetchone()
-        max = data_1['MAX(ticket_id)']
-        if (max == None):
-            new_id = 1;
-        else:
-            new_id = int(max) + 1
-        query_2 = 'INSERT INTO ticket VALUES(%s,%s,%s)'
-        cursor.execute(query_2,(str(new_id),airline_name,flight_num))
-        query_3 = 'INSERT INTO purchases VALUES(%s,%s,NULL,CURDATE())'
-        cursor.execute(query_3,(str(new_id),username))
-        query_4 = 'UPDATE flight SET seats_left = seats_left - 1 WHERE flight.airline_name=%s AND flight_num = %s'
-        cursor.execute(query_4,(airline_name,flight_num))
-        conn.commit()
-        cursor.close()
-        message='Purchase Complete'
-        return render_template('purchase.html',message=message)
-    else:
-        message = 'Purchase Failure. No more seats for this flight'
-        return render_template('purchase.html',message=message)
+	usertype = session['type']
+	if usertype!='customer':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	username = session['username']
+	cursor=conn.cursor()
+	message = None
+	query_0 = 'SELECT seats_left FROM flight WHERE airline_name = %s AND flight_num = %s'
+	cursor.execute(query_0,(airline_name,flight_num))
+	data_0 = cursor.fetchone()
+	seats_left = int(data_0['seats_left'])
+	if (seats_left > 0):
+		query_1 = 'SELECT MAX(ticket_id) FROM ticket'
+		cursor.execute(query_1)
+		data_1 = cursor.fetchone()
+		max = data_1['MAX(ticket_id)']
+		if (max == None):
+			new_id = 1;
+		else:
+			new_id = int(max) + 1
+		query_2 = 'INSERT INTO ticket VALUES(%s,%s,%s)'
+		cursor.execute(query_2,(str(new_id),airline_name,flight_num))
+		query_3 = 'INSERT INTO purchases VALUES(%s,%s,NULL,CURDATE())'
+		cursor.execute(query_3,(str(new_id),username))
+		query_4 = 'UPDATE flight SET seats_left = seats_left - 1 WHERE flight.airline_name=%s AND flight_num = %s'
+		cursor.execute(query_4,(airline_name,flight_num))
+		conn.commit()
+		cursor.close()
+		message='Purchase Complete'
+		return render_template('purchase.html',message=message)
+	else:
+		message = 'Purchase Failure. No more seats for this flight'
+		return render_template('purchase.html',message=message)
 
 @app.route('/checkSpending', methods=['GET', 'POST'])
 def checkSpending():
+	usertype = session['type']
+	if usertype!='customer':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	username=session['username']
 	cursor=conn.cursor()
 	try:
@@ -381,12 +393,20 @@ def checkSpending():
 
 @app.route('/purchaseA1/<airline_name>/<flight_num>',methods=['GET','POST'])
 def purchaseA1(airline_name,flight_num):
+	usertype = session['type']
+	if usertype!='booking_agent':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	session['airline_name'] = airline_name
 	session['flight_num'] = flight_num
 	return render_template('purchase_agent.html')
 
 @app.route('/purchaseA2',methods=['GET','POST'])
 def purchaseA2():
+	usertype = session['type']
+	if usertype!='booking_agent':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	username_b = session['username']
 	username_c = request.form['username']
 	airline_name_1 = session['airline_name']
@@ -431,41 +451,49 @@ def purchaseA2():
 	return render_template('purchase.html',message=message)
 
 @app.route('/viewMyFlightAgent', methods=['GET', 'POST'])
-def viewMyFlightAgent():
-    dept_airport = request.form['dept_airport']
-    arr_airport = request.form['arr_airport']
-    start_date = str(request.form['start_date'])
-    end_date = str(request.form['end_date'])
-    username = session['username']
-    control_list=[]
-    if dept_airport!='':
-        control_list.append("departure_airport = '%s'"%(dept_airport))
-    if arr_airport!='':
-        control_list.append("arrival_airport = '%s'"%(arr_airport))
-    if start_date!='':
-        control_list.append("DATE(purchase_date)>'%s'"%(start_date))
-    if end_date!='':
-        control_list.append("DATE(purchase_date)<'%s'"%(end_date))
-    cursor = conn.cursor()
-    query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
-    cursor.execute(query_0,(username))
-    data_0 = cursor.fetchone()
-    booking_agent_id = data_0['booking_agent_id']
-
-    if len(control_list) == 0:
-        query_1 = "SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
+def viewMyFlightAgent():	
+	usertype = session['type']
+	if usertype!='booking_agent':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	dept_airport = request.form['dept_airport']
+	arr_airport = request.form['arr_airport']
+	start_date = str(request.form['start_date'])
+	end_date = str(request.form['end_date'])
+	username = session['username']
+	control_list=[]
+	if dept_airport!='':
+		control_list.append("departure_airport = '%s'"%(dept_airport))
+	if arr_airport!='':
+		control_list.append("arrival_airport = '%s'"%(arr_airport))
+	if start_date!='':
+		control_list.append("DATE(purchase_date)>'%s'"%(start_date))
+	if end_date!='':
+		control_list.append("DATE(purchase_date)<'%s'"%(end_date))
+	cursor = conn.cursor()
+	query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	booking_agent_id = data_0['booking_agent_id']
+	
+	if len(control_list) == 0:
+		query_1 = "SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
         WHERE status = 'upcoming' AND booking_agent_id = '%s'"%(booking_agent_id)
-    else:
-        query_1 ="SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
+	else:
+		query_1 ="SELECT * FROM flight NATURAL JOIN ticket NATURAL JOIN purchases \
         WHERE booking_agent_id = '%s' AND "%(booking_agent_id) + " AND ".join(control_list)
-    cursor.execute(query_1)
-    data_1 = cursor.fetchall()
-    conn.commit()
-    cursor.close()
-    return render_template('search_results.html',result = data_1)
+	cursor.execute(query_1)
+	data_1 = cursor.fetchall()
+	conn.commit()
+	cursor.close()
+	return render_template('search_results.html',result = data_1)
 
 @app.route('/viewCustomer/<airline_name>/<flight_num>',methods=['GET','POST'])
 def viewCustomer(airline_name,flight_num):
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	cursor = conn.cursor()
 	query = 'SELECT DISTINCT customer_email FROM ticket NATURAL JOIN purchases WHERE airline_name =%s AND flight_num=%s'
 	cursor.execute(query,(airline_name,str(flight_num)))
@@ -474,48 +502,56 @@ def viewCustomer(airline_name,flight_num):
 
 @app.route('/checkTop5', methods=['GET', 'POST'])
 def checkTop5():
-    username=session['username']
-    cursor = conn.cursor()
-    query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
-    cursor.execute(query_0,(username))
-    data_0 = cursor.fetchone()
-    b_id = data_0['booking_agent_id']
-    end_date = date.today().isoformat()[:-3]+"-01"
-    cur_y = date.today().year
-    cur_m = date.today().month
-    cur_m = cur_m - 5
-    if (cur_m < 1):
-        cur_y = cur_y - 1
-        cur_m = cur_m + 12
-    start_date = date(cur_y,cur_m,1).isoformat()
-    query_1 = 'SELECT customer_email,COUNT(DISTINCT ticket_id) AS count FROM ticket NATURAL JOIN purchases \
+	usertype = session['type']
+	if usertype!='booking_agent':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	username=session['username']
+	cursor = conn.cursor()
+	query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	b_id = data_0['booking_agent_id']
+	end_date = date.today().isoformat()[:-3]+"-01"
+	cur_y = date.today().year
+	cur_m = date.today().month
+	cur_m = cur_m - 5
+	if (cur_m < 1):
+		cur_y = cur_y - 1
+		cur_m = cur_m + 12
+	start_date = date(cur_y,cur_m,1).isoformat()
+	query_1 = 'SELECT customer_email,COUNT(DISTINCT ticket_id) AS count FROM ticket NATURAL JOIN purchases \
             WHERE booking_agent_id = %s AND purchase_date >%s AND purchase_date < DATE_ADD(%s, INTERVAL 1 MONTH) \
             GROUP BY customer_email ORDER BY count DESC'
-    cursor.execute(query_1,(str(b_id),start_date,end_date))
-    data_1 = cursor.fetchall()[:5]
-    data1=[]
-    label1=[]
-    for i in range(len(data_1)):
-        data1.append(data_1[i]['count'])
-        label1.append(data_1[i]['customer_email'])
-    query_2 = 'SELECT customer_email, SUM(price)*0.1 AS commission FROM purchases NATURAL JOIN ticket NATURAL JOIN flight \
+	cursor.execute(query_1,(str(b_id),start_date,end_date))
+	data_1 = cursor.fetchall()[:5]
+	data1=[]
+	label1=[]
+	for i in range(len(data_1)):
+		data1.append(data_1[i]['count'])
+		label1.append(data_1[i]['customer_email'])
+	query_2 = 'SELECT customer_email, SUM(price)*0.1 AS commission FROM purchases NATURAL JOIN ticket NATURAL JOIN flight \
             WHERE booking_agent_id = %s AND purchase_date > %s AND purchase_date < DATE_ADD(%s, INTERVAL 1 MONTH) \
             GROUP BY customer_email ORDER BY commission DESC'
-    cursor.execute(query_2,(str(b_id),start_date,end_date))
-    data_2 = cursor.fetchall()[:5]
-    data2=[]
-    label2=[]
-    for i in range(len(data_2)):
-        data2.append(int(data_2[i]['commission']))
-        label2.append(data_2[i]['customer_email'])
-    print(data1)
-    print(label1)
-    print(data2)
-    print(label2)
-    return render_template('chartagent.html',data1 = data1, data2 = data2, label1 = label1, label2 = label2)
+	cursor.execute(query_2,(str(b_id),start_date,end_date))
+	data_2 = cursor.fetchall()[:5]
+	data2=[]
+	label2=[]
+	for i in range(len(data_2)):
+		data2.append(int(data_2[i]['commission']))
+		label2.append(data_2[i]['customer_email'])
+	print(data1)
+	print(label1)
+	print(data2)
+	print(label2)
+	return render_template('chartagent.html',data1 = data1, data2 = data2, label1 = label1, label2 = label2)
 
 @app.route('/viewCommission', methods=['GET','POST'])
 def viewCommission():
+	usertype = session['type']
+	if usertype!='booking_agent':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	username=session['username']
 	cursor = conn.cursor()
 	query_0 = 'SELECT booking_agent_id FROM booking_agent WHERE email = %s'
@@ -660,8 +696,8 @@ def changeFlightStatus():
 	username = session['username']
 	usertype = session['type']
 	if usertype!='airline_staff':
-		error='Unauthorized operation'
-		return render_template('index.html', username=username, usertype=usertype, error=error)
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	flight_num=int(request.form['flight_num'])
 	new_status=request.form['new_status']
 	cursor = conn.cursor()
@@ -691,8 +727,8 @@ def addAirplane():
 	username = session['username']
 	usertype = session['type']
 	if usertype!='airline_staff':
-		error='Unauthorized operation'
-		return render_template('index.html', username=username, usertype=usertype, error=error)
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	airplane_id=request.form['airplane_id']
 	seats=request.form['seats']
 	cursor = conn.cursor()
@@ -733,8 +769,8 @@ def addAirport():
 	username = session['username']
 	usertype = session['type']
 	if usertype!='airline_staff':
-		error='Unauthorized operation'
-		return render_template('index.html', username=username, usertype=usertype, error=error)
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	airport_name=request.form['airport_name']
 	airport_city=request.form['airport_city']
 	cursor = conn.cursor()
@@ -755,6 +791,10 @@ def addAirport():
 
 @app.route('/checkTop5Agent', methods=['GET','POST'])
 def checkTop5Agent():
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	username=session['username']
 	cursor = conn.cursor()
 	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
@@ -793,6 +833,10 @@ def checkTop5Agent():
 
 @app.route('/viewReport', methods=['GET', 'POST'])
 def viewReport():
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	username=session['username'];
 	try:
 		start_date=str(request.form['start_date'])+"-01"
@@ -866,6 +910,10 @@ def viewReport():
 @app.route('/compareRevenue', methods=['GET', 'POST'])
 
 def compareRevenue():
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
 	cursor=conn.cursor()
 	username=session['username'];
 	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
@@ -916,79 +964,91 @@ def compareRevenue():
 
 @app.route('/viewFrequentCustomer', methods=['GET', 'POST'])
 def viewFrequentCustomer():
-    username = session['username']
-    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
-    cursor = conn.cursor()
-    cursor.execute(query_0,(username))
-    data_0 = cursor.fetchone()
-    airline_name = data_0['airline_name']
-    query_1 = 'SELECT customer_email, COUNT(ticket_id) AS count FROM purchases NATURAL JOIN ticket \
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	username = session['username']
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor = conn.cursor()
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name = data_0['airline_name']
+	query_1 = 'SELECT customer_email, COUNT(ticket_id) AS count FROM purchases NATURAL JOIN ticket \
                WHERE airline_name = %s GROUP BY customer_email ORDER BY count DESC'
-    cursor.execute(query_1,(airline_name))
-    data_1 = cursor.fetchall()
-    if data_1 == None:
-        message = 'There is no customer currently'
-    else:
-        mfc = data_1[0]['customer_email']
-        message = 'The most frequent customer of '+ airline_name + ' is '+ mfc
-    query_2 = 'SELECT DISTINCT customer_email FROM purchases NATURAL JOIN ticket \
+	cursor.execute(query_1,(airline_name))
+	data_1 = cursor.fetchall()
+	if data_1 == None:
+		message = 'There is no customer currently'
+	else:
+		mfc = data_1[0]['customer_email']
+		message = 'The most frequent customer of '+ airline_name + ' is '+ mfc
+	query_2 = 'SELECT DISTINCT customer_email FROM purchases NATURAL JOIN ticket \
                WHERE airline_name = %s'
-    cursor.execute(query_2,(airline_name))
-    data_2 = cursor.fetchall()
-    conn.commit()
-    cursor.close()
-    return render_template('frequentCustomer.html',message = message, result = data_2)
+	cursor.execute(query_2,(airline_name))
+	data_2 = cursor.fetchall()
+	conn.commit()
+	cursor.close()
+	return render_template('frequentCustomer.html',message = message, result = data_2)
 
 @app.route('/checkCustomerFlight/<customer_email>',methods=['GET','POST'])
 def checkCustomerFlight(customer_email):
-    print(customer_email)
-    username = session['username']
-    cursor = conn.cursor()
-    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
-    cursor.execute(query_0,(username))
-    data_0 = cursor.fetchone()
-    airline_name = data_0['airline_name']
-    query_1 = 'SELECT * FROM ticket NATURAL JOIN flight NATURAL JOIN purchases \
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	print(customer_email)
+	username = session['username']
+	cursor = conn.cursor()
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name = data_0['airline_name']
+	query_1 = 'SELECT * FROM ticket NATURAL JOIN flight NATURAL JOIN purchases \
                WHERE airline_name = %s AND customer_email = %s'
-    cursor.execute(query_1,(airline_name,customer_email))
-    data_1 = cursor.fetchall()
-    print(data_1)
-    conn.commit()
-    cursor.close()
-    return render_template('search_results.html',result = data_1,flag = 1)
+	cursor.execute(query_1,(airline_name,customer_email))
+	data_1 = cursor.fetchall()
+	print(data_1)
+	conn.commit()
+	cursor.close()
+	return render_template('search_results.html',result = data_1,flag = 1)
 
 @app.route('/viewTopDestination', methods=['GET', 'POST'])
 def viewTopDestination():
-    username = session['username']
-    cursor = conn.cursor()
-    query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
-    cursor.execute(query_0,(username))
-    data_0 = cursor.fetchone()
-    airline_name = data_0['airline_name']
-    message = []
-    message.append('Top 3 popular destination in the last 3 months:')
-    query_1 = 'SELECT arrival_airport,COUNT(arrival_airport) AS count FROM flight WHERE airline_name = %s AND \
+	usertype = session['type']
+	if usertype!='airline_staff':
+		message='Unauthorized operation'
+		return render_template('purchase.html', message = message)
+	username = session['username']
+	cursor = conn.cursor()
+	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
+	cursor.execute(query_0,(username))
+	data_0 = cursor.fetchone()
+	airline_name = data_0['airline_name']
+	message = []
+	message.append('Top 3 popular destination in the last 3 months:')
+	query_1 = 'SELECT arrival_airport,COUNT(arrival_airport) AS count FROM flight WHERE airline_name = %s AND \
               DATE(departure_time) < CURDATE() AND DATE(departure_time) > DATE_ADD(CURDATE(),INTERVAL -3 MONTH) \
               GROUP BY arrival_airport ORDER BY count DESC'
-    cursor.execute(query_1,(airline_name))
-    data_1 = cursor.fetchall()
-    data = data_1[:4]
-    print(data)
-    for i in range(len(data)):
-        print(data[i])
-        message.append('%d:%s appears %d times'%(i+1,data[i]['arrival_airport'],data[i]['count']))
-    message.append('Top 3 popular destination in the last year:')
-    query_2 = 'SELECT arrival_airport,COUNT(arrival_airport) AS count FROM flight WHERE airline_name = %s AND \
+	cursor.execute(query_1,(airline_name))
+	data_1 = cursor.fetchall()
+	data = data_1[:4]
+	print(data)
+	for i in range(len(data)):
+		print(data[i])
+		message.append('%d:%s appears %d times'%(i+1,data[i]['arrival_airport'],data[i]['count']))
+	message.append('Top 3 popular destination in the last year:')
+	query_2 = 'SELECT arrival_airport,COUNT(arrival_airport) AS count FROM flight WHERE airline_name = %s AND \
     DATE(departure_time) < CURDATE() AND DATE(departure_time) > DATE_ADD(CURDATE(),INTERVAL -12 MONTH) \
     GROUP BY arrival_airport ORDER BY count DESC'
-    cursor.execute(query_2,(airline_name))
-    data_2 = cursor.fetchall()
-    data = data_2[:4]
-    for i in range(len(data)):
-         message.append('%d: %s, appears %d times'%(i+1, data[i]['arrival_airport'],data[i]['count']))
-    conn.commit()
-    cursor.close()
-    return render_template('topagent.html',message = message)
+	cursor.execute(query_2,(airline_name))
+	data_2 = cursor.fetchall()
+	data = data_2[:4]
+	for i in range(len(data)):
+		message.append('%d: %s, appears %d times'%(i+1, data[i]['arrival_airport'],data[i]['count']))
+	conn.commit()
+	cursor.close()
+	return render_template('topagent.html',message = message)
 
 
 @app.route('/logout')
