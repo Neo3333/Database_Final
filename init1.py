@@ -635,7 +635,7 @@ def viewMyFlightStaff():
          status='upcoming' AND DATE(departure_time) > CURDATE() AND \
          DATE(departure_time) < DATE_ADD(CURDATE(), INTERVAL 1 MONTH)"%(airline_name)
 	else:
-		query_1 = "SELECT * FROM flight WHERE airline_name = '%s' AND  status='upcoming' AND "%(airline_name) + " AND ".join(control_list)
+		query_1 = "SELECT * FROM flight WHERE airline_name = '%s' AND "%(airline_name) + " AND ".join(control_list)
 	cursor.execute(query_1)
 	data_1 = cursor.fetchall()
 	conn.commit()
