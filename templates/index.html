@@ -15,10 +15,6 @@
 	<a href="/register">Register</a>
 {% endif %}
 
-{% if error %}
-<p>ERROR:{{error}}!</p>
-{% endif %}
-
 <form action="/searchUpcomingFlights" method="POST">
 	<h1>Search flights by city and airport</h1>
     departure airport:<input type="text" name = "dept_airport" placeholder="e.g. PVG"> </br>

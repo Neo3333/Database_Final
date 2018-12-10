@@ -632,10 +632,10 @@ def viewMyFlightStaff():
 		control_list.append("DATE(arrival_time)<'%s'"%(end_date))
 	if len(control_list) == 0:
 		query_1 = "SELECT * From flight WHERE airline_name = '%s' AND \
-         DATE(departure_time) > CURDATE() AND \
+         status='upcoming' AND DATE(departure_time) > CURDATE() AND \
          DATE(departure_time) < DATE_ADD(CURDATE(), INTERVAL 1 MONTH)"%(airline_name)
 	else:
-		query_1 = "SELECT * FROM flight WHERE airline_name = '%s' AND "%(airline_name) + " AND ".join(control_list)
+		query_1 = "SELECT * FROM flight WHERE airline_name = '%s' AND  status='upcoming' AND "%(airline_name) + " AND ".join(control_list)
 	cursor.execute(query_1)
 	data_1 = cursor.fetchall()
 	conn.commit()
@@ -677,6 +677,12 @@ def createFlight():
 	data_1 = cursor.fetchone()
 	if data_1 == None:
 		message = 'Please provide valid information'
+		return render_template('purchase.html', message = message)
+	query_1 = 'SELECT * FROM flight WHERE airline_name = %s AND flight_num = %s'
+	cursor.execute(query_1,(airline_name,flight_num))
+	data_1 = cursor.fetchone()
+	if data_1 != None:
+		message = 'Already exists!'
 		return render_template('purchase.html', message = message)
 	seats_left = data_1['seats']
 	query_2 = 'INSERT INTO flight VALUES(%s,%s,%s,%s,%s,%s,%s,"upcoming",%s,%s)'
@@ -735,15 +741,6 @@ def addAirplane():
 	query_0 = 'SELECT airline_name FROM airline_staff WHERE username = %s'
 	cursor.execute(query_0,(username))
 	data_0 = cursor.fetchone()
-	airline_name =str(data_0['airline_name'])
-	query="SELECT * \
-			FROM airline \
-			WHERE airline_name='%s'"%(airline_name)
-	cursor.execute(query)
-	data=cursor.fetchone()
-	if data==None:
-		message = 'Please provide valid information'
-		return render_template('purchase.html', message = message)
 	query="SELECT * \
 			FROM airplane \
 			WHERE airline_name='%s' and airplane_id=%s"%(airline_name,airplane_id)
